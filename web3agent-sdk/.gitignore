@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables — NEVER commit
+.env
+.env.local
+.env.*.local
+
+# Agent wallet files — NEVER commit (contain private keys)
+agents/*/wallet.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
