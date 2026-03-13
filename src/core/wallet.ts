@@ -13,7 +13,7 @@ import type { WalletData, WalletOptions, FundAgentOptions } from "./types.js";
  * Root directory for agent runtime data.
  * Each agent gets its own subdirectory: agents/<agent-name>/
  */
-const AGENTS_DIR = path.resolve(process.cwd(), "agents");
+export const AGENTS_DIR = path.resolve(process.cwd(), "agents");
 
 /**
  * Creates or loads an isolated wallet for the named agent.

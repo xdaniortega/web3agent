@@ -1,37 +1,29 @@
 /**
  * web3agent-sdk — Deploy autonomous AI agents on Arbitrum.
- *
- * This is the public entry point. All consumer-facing functions and types
- * are re-exported from here. Import from "web3agent-sdk" only.
- *
  * @packageDocumentation
  */
 
-// --- Configuration ---
-export { getActiveNetwork, getNetworkConfig, getProvider, getRpcUrl, getChainId } from "./config.js";
-
-// --- LLM ---
-export { getLLM } from "./llm.js";
-export type { LLMProvider } from "./llm.js";
-
-// --- Wallet Management ---
+export { getActiveNetwork, getNetworkConfig, getProvider, getRpcUrl, getChainId } from "./core/config.js";
+export { getLLM } from "./core/llm.js";
+export type { LLMProvider } from "./core/llm.js";
 export {
+  AGENTS_DIR,
   getOrCreateAgentWallet,
   getMasterWallet,
   getMasterWalletBalance,
   fundAgentWallet,
-} from "./wallet.js";
+} from "./core/wallet.js";
+export { runAgent } from "./core/orchestrator.js";
+export { registerAgent } from "./core/registry.js";
+export {
+  discoverAgentSkills,
+  listAgentSkills,
+  resolveAgentSkills,
+  buildSkillSystemPrompt,
+} from "./core/agent-skills.js";
+export type { SkillFactory } from "./core/agent-skills.js";
+export { scaffoldAgentSkill, listSkillTemplates } from "./skills/scaffold.js";
 
-// --- Agent Orchestration ---
-export { runAgent } from "./orchestrator.js";
-
-// --- ERC-8004 Registration ---
-export { registerAgent } from "./registry.js";
-
-// --- Skills ---
-export { listSkills, resolveSkills, createUniswapSwapSkill } from "./skills/index.js";
-
-// --- Types ---
 export type {
   NetworkName,
   NetworkConfig,
@@ -42,8 +34,7 @@ export type {
   RegistrationResult,
   RunAgentOptions,
   AgentRunResult,
+  AgentSkillConfig,
   SwapInput,
   SwapResult,
-} from "./types.js";
-
-export type { SkillFactory } from "./skills/index.js";
+} from "./core/types.js";

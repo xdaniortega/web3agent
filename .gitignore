@@ -9,8 +9,12 @@ dist/
 .env.local
 .env.*.local
 
-# Agent wallet files — NEVER commit (contain private keys)
+# Agent runtime data — NEVER commit (contains private keys)
 agents/*/wallet.json
+agents/*/skills/
+
+# Claude Code local settings
+.claude/
 
 # OS files
 .DS_Store

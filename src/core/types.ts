@@ -58,14 +58,24 @@ export interface RegistrationResult {
   txHash: string;
 }
 
+/** Parsed SKILL.md file from an agent's skills directory. */
+export interface AgentSkillConfig {
+  /** Skill name — must match a key in the skill registry. */
+  name: string;
+  /** Optional description override for this agent's context. */
+  description?: string;
+  /** Optional markdown body with usage instructions (injected into system prompt). */
+  instructions?: string;
+}
+
 /** Options for running an agent via the orchestrator. */
 export interface RunAgentOptions {
   /** Natural-language task for the agent to execute. */
   task: string;
   /** Agent's private key — passed to skill factories so they can sign transactions. */
   privateKey: string;
-  /** Skill names to attach (max 3). Must match keys in the skill registry. */
-  skills?: string[];
+  /** Agent name — skills are discovered from agents/<name>/skills/. */
+  agentName?: string;
   /**
    * Enable streaming output from the model.
    * Disabled by default. Set to true to stream token-by-token.
