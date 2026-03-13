@@ -1,18 +1,22 @@
 /**
  * Interactive chat with an onchain agent. Conversation persists across restarts.
+ * Loads both custom skills and GOAT plugins from the agent directory.
  *
  * Usage:
  *   npm run chat                          # default chat-agent
- *   npm run chat -- --agent my-agent      # uses skills from agents/my-agent/skills/
+ *   npm run chat -- --agent my-agent      # uses tools from agents/my-agent/
  */
 
 import * as readline from "node:readline";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import dotenv from "dotenv";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { getLLM } from "../core/llm.js";
-import { getOrCreateAgentWallet } from "../core/wallet.js";
+import { AGENTS_DIR, getOrCreateAgentWallet } from "../core/wallet.js";
 import { discoverAgentSkills, resolveAgentSkills } from "../core/agent-skills.js";
 import { createFileCheckpointer } from "../core/file-checkpoint.js";
+import { resolveGoatTools } from "../core/goat-tools.js";
 
 dotenv.config();
 
@@ -24,11 +28,26 @@ function getFlag(name: string): string | undefined {
 
 const agentName = getFlag("agent") || "chat-agent";
 
+function loadGoatConfig(agentName: string): string[] {
+  const configPath = path.join(AGENTS_DIR, agentName, "goat-plugins.json");
+  if (!fs.existsSync(configPath)) return [];
+  try { return JSON.parse(fs.readFileSync(configPath, "utf-8")); } catch { return []; }
+}
+
 async function main() {
   const wallet = getOrCreateAgentWallet({ agentName });
 
+  // Load custom skills
   const skillNames = discoverAgentSkills(agentName).map((c) => c.name);
-  const tools = await resolveAgentSkills(agentName, wallet.privateKey);
+  const customTools = await resolveAgentSkills(agentName, wallet.privateKey);
+
+  // Load GOAT plugins
+  const goatPluginNames = loadGoatConfig(agentName);
+  const goatTools = await resolveGoatTools(goatPluginNames, wallet.privateKey);
+
+  const allTools = [...customTools, ...goatTools];
+  const allToolNames = [...skillNames, ...goatPluginNames];
+
   const { saver, flush } = createFileCheckpointer(agentName);
 
   console.log();
@@ -38,15 +57,15 @@ async function main() {
   console.log();
   console.log(`  Agent        : ${agentName}`);
   console.log(`  Agent wallet : ${wallet.address}`);
-  console.log(`  Skills       : ${skillNames.length > 0 ? skillNames.join(", ") : "none"}`);
+  console.log(`  Tools        : ${allToolNames.length > 0 ? allToolNames.join(", ") : "none"}`);
   console.log();
   console.log('  Type your message and press Enter. Type "exit" to quit.');
   console.log("=".repeat(60));
   console.log();
 
   const llm = getLLM();
-  const agent = createReactAgent({ llm, tools, checkpointSaver: saver });
-  const threadId = agentName; // stable thread per agent
+  const agent = createReactAgent({ llm, tools: allTools, checkpointSaver: saver });
+  const threadId = agentName;
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   rl.on("close", () => { flush(); console.log("\nGoodbye!\n"); process.exit(0); });
@@ -58,7 +77,6 @@ async function main() {
       if (trimmed.toLowerCase() === "exit") { rl.close(); return; }
 
       try {
-        // Count messages before invoke to find new ones after
         const prevState = await agent.getState({ configurable: { thread_id: threadId } });
         const prevCount = prevState?.values?.messages?.length ?? 0;
 
@@ -68,7 +86,6 @@ async function main() {
         );
         flush();
 
-        // Show only new messages from this turn
         const allMessages = result.messages;
         const newMessages = allMessages.slice(prevCount);
 
@@ -77,8 +94,7 @@ async function main() {
           const content = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content);
 
           if (role === "ai" && (msg as any).tool_calls?.length) {
-            const calls = (msg as any).tool_calls;
-            for (const tc of calls) {
+            for (const tc of (msg as any).tool_calls) {
               console.log(`\n  [calling ${tc.name}] ${JSON.stringify(tc.args)}`);
             }
           } else if (role === "tool") {

@@ -1,5 +1,5 @@
 /**
- * Deploy an agent: create wallet, fund it, install skills, open chat.
+ * Deploy an agent: create wallet, pick skills + GOAT tools, fund, register, chat.
  *
  * Usage:
  *   npm run deploy -- --name my-agent
@@ -8,12 +8,15 @@
  */
 
 import * as readline from "node:readline";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import dotenv from "dotenv";
 import * as p from "@clack/prompts";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { getLLM } from "../core/llm.js";
 import { getActiveNetwork, getNetworkConfig, getProvider } from "../core/config.js";
 import {
+  AGENTS_DIR,
   getOrCreateAgentWallet,
   getMasterWallet,
   getMasterWalletBalance,
@@ -23,6 +26,12 @@ import { registerAgent } from "../core/registry.js";
 import { discoverAgentSkills, resolveAgentSkills } from "../core/agent-skills.js";
 import { createFileCheckpointer } from "../core/file-checkpoint.js";
 import { scaffoldAgentSkill, listSkillTemplates } from "../skills/scaffold.js";
+import {
+  GOAT_PLUGIN_REGISTRY,
+  getGoatCategories,
+  getGoatPluginsByCategory,
+  resolveGoatTools,
+} from "../core/goat-tools.js";
 
 dotenv.config();
 
@@ -44,6 +53,78 @@ function hasFlag(name: string): boolean {
 const skipRegister = hasFlag("skip-register");
 
 // ---------------------------------------------------------------------------
+// Tool selection — custom skills + GOAT tools in categorized groups
+// ---------------------------------------------------------------------------
+async function selectTools(): Promise<{ customSkills: string[]; goatPlugins: string[] }> {
+  const customTemplates = listSkillTemplates();
+  const goatCategories = getGoatCategories();
+
+  // Build grouped options for clack
+  type Option = { value: string; label: string; hint?: string };
+  const options: (Option | { separator: true; label?: string })[] = [];
+
+  // Custom skill templates
+  if (customTemplates.length > 0) {
+    options.push({ separator: true, label: "Custom Skills" } as any);
+    for (const t of customTemplates) {
+      options.push({ value: `custom:${t}`, label: t, hint: "local template" });
+    }
+  }
+
+  // GOAT plugins by category
+  for (const category of goatCategories) {
+    const plugins = getGoatPluginsByCategory(category);
+    options.push({ separator: true, label: `GOAT - ${category}` } as any);
+    for (const plugin of plugins) {
+      options.push({
+        value: `goat:${plugin.name}`,
+        label: plugin.name,
+        hint: plugin.description,
+      });
+    }
+  }
+
+  const result = await p.multiselect({
+    message: "Select tools for your agent",
+    options: options as Option[],
+    required: false,
+  });
+
+  if (p.isCancel(result)) {
+    p.cancel("Cancelled.");
+    process.exit(0);
+  }
+
+  const selected = result as string[];
+  const customSkills = selected
+    .filter((s) => s.startsWith("custom:"))
+    .map((s) => s.replace("custom:", ""));
+  const goatPlugins = selected
+    .filter((s) => s.startsWith("goat:"))
+    .map((s) => s.replace("goat:", ""));
+
+  return { customSkills, goatPlugins };
+}
+
+// ---------------------------------------------------------------------------
+// Save GOAT config to agent directory for later reload
+// ---------------------------------------------------------------------------
+function saveGoatConfig(agentName: string, pluginNames: string[]): void {
+  const configPath = path.join(AGENTS_DIR, agentName, "goat-plugins.json");
+  fs.writeFileSync(configPath, JSON.stringify(pluginNames, null, 2), "utf-8");
+}
+
+function loadGoatConfig(agentName: string): string[] {
+  const configPath = path.join(AGENTS_DIR, agentName, "goat-plugins.json");
+  if (!fs.existsSync(configPath)) return [];
+  try {
+    return JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  } catch {
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Interactive chat (post-deploy)
 // ---------------------------------------------------------------------------
 async function startChat(
@@ -52,19 +133,27 @@ async function startChat(
   masterAddress: string
 ): Promise<void> {
   const skillNames = discoverAgentSkills(agentName).map((c) => c.name);
-  const tools = await resolveAgentSkills(agentName, privateKey);
+  const customTools = await resolveAgentSkills(agentName, privateKey);
+
+  // Load GOAT tools
+  const goatPluginNames = loadGoatConfig(agentName);
+  const goatTools = await resolveGoatTools(goatPluginNames, privateKey);
+
+  const allTools = [...customTools, ...goatTools];
+  const allToolNames = [...skillNames, ...goatPluginNames];
+
   const { saver, flush } = createFileCheckpointer(agentName);
 
   console.log();
   console.log(`  Agent  : ${agentName}`);
-  console.log(`  Skills : ${skillNames.join(", ") || "none"}`);
+  console.log(`  Tools  : ${allToolNames.join(", ") || "none"}`);
   console.log(`  Master : ${masterAddress}`);
   console.log();
   console.log('  Type your message and press Enter. Type "exit" to quit.');
   console.log();
 
   const llm = getLLM();
-  const agent = createReactAgent({ llm, tools, checkpointSaver: saver });
+  const agent = createReactAgent({ llm, tools: allTools, checkpointSaver: saver });
   const threadId = agentName;
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -94,8 +183,7 @@ async function startChat(
           const content = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content);
 
           if (role === "ai" && (msg as any).tool_calls?.length) {
-            const calls = (msg as any).tool_calls;
-            for (const tc of calls) {
+            for (const tc of (msg as any).tool_calls) {
               console.log(`\n  [calling ${tc.name}] ${JSON.stringify(tc.args)}`);
             }
           } else if (role === "tool") {
@@ -163,21 +251,18 @@ async function main(): Promise<void> {
   const agentWallet = getOrCreateAgentWallet({ agentName });
   s.stop(`Agent wallet: ${agentWallet.address}`);
 
-  // --- Select skills ---
-  const available = listSkillTemplates();
-  if (available.length > 0) {
-    const skillResult = await p.multiselect({
-      message: "Select skills to install",
-      options: available.map((s) => ({ value: s, label: s })),
-      required: false,
-    });
+  // --- Select tools (custom skills + GOAT) ---
+  const { customSkills, goatPlugins } = await selectTools();
 
-    if (p.isCancel(skillResult)) { p.cancel("Cancelled."); process.exit(0); }
+  // Install custom skill templates
+  for (const skill of customSkills) {
+    scaffoldAgentSkill(agentName, skill);
+  }
 
-    const selectedSkills = skillResult as string[];
-    for (const skill of selectedSkills) {
-      scaffoldAgentSkill(agentName, skill);
-    }
+  // Save GOAT plugin config
+  if (goatPlugins.length > 0) {
+    saveGoatConfig(agentName, goatPlugins);
+    p.log.success(`GOAT plugins: ${goatPlugins.join(", ")}`);
   }
 
   // --- Fund amount ---
@@ -233,13 +318,16 @@ async function main(): Promise<void> {
   const agentBalance = await provider.getBalance(agentWallet.address);
   const { ethers } = await import("ethers");
 
-  const discoveredSkills = discoverAgentSkills(agentName).map((c) => c.name);
+  const allToolNames = [
+    ...discoverAgentSkills(agentName).map((c) => c.name),
+    ...goatPlugins,
+  ];
 
   p.note(
     `Name    : ${agentName}\n` +
     `Wallet  : ${agentWallet.address}\n` +
     `Balance : ${ethers.formatEther(agentBalance)} ETH\n` +
-    `Skills  : ${discoveredSkills.join(", ") || "none"}\n` +
+    `Tools   : ${allToolNames.join(", ") || "none"}\n` +
     `Master  : ${masterWallet.address}`,
     "Agent Deployed"
   );

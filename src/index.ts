@@ -24,6 +24,13 @@ export {
 export type { SkillFactory } from "./core/agent-skills.js";
 export { createFileCheckpointer } from "./core/file-checkpoint.js";
 export { scaffoldAgentSkill, listSkillTemplates } from "./skills/scaffold.js";
+export {
+  GOAT_PLUGIN_REGISTRY,
+  getGoatCategories,
+  getGoatPluginsByCategory,
+  resolveGoatTools,
+} from "./core/goat-tools.js";
+export type { GoatPluginEntry } from "./core/goat-tools.js";
 
 export type {
   NetworkName,
