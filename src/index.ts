@@ -22,6 +22,7 @@ export {
   buildSkillSystemPrompt,
 } from "./core/agent-skills.js";
 export type { SkillFactory } from "./core/agent-skills.js";
+export { createFileCheckpointer } from "./core/file-checkpoint.js";
 export { scaffoldAgentSkill, listSkillTemplates } from "./skills/scaffold.js";
 
 export type {

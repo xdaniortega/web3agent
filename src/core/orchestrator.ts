@@ -8,11 +8,7 @@
 
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { getLLM } from "./llm.js";
-import {
-  discoverAgentSkills,
-  resolveAgentSkills,
-  buildSkillSystemPrompt,
-} from "./agent-skills.js";
+import { resolveAgentSkills } from "./agent-skills.js";
 import type { RunAgentOptions, AgentRunResult } from "./types.js";
 
 /**
@@ -25,12 +21,9 @@ export async function runAgent(options: RunAgentOptions): Promise<AgentRunResult
   const { task, privateKey, agentName, streaming = false } = options;
 
   let tools: Awaited<ReturnType<typeof resolveAgentSkills>> = [];
-  let systemPrompt = "";
 
   if (agentName) {
-    const configs = discoverAgentSkills(agentName);
     tools = await resolveAgentSkills(agentName, privateKey);
-    systemPrompt = buildSkillSystemPrompt(configs);
   }
 
   const skillNames = tools.map((t) => t.name);
@@ -47,9 +40,6 @@ export async function runAgent(options: RunAgentOptions): Promise<AgentRunResult
   console.log(`[orchestrator] Invoking agent...`);
 
   const messages: { role: string; content: string }[] = [];
-  if (systemPrompt) {
-    messages.push({ role: "system", content: systemPrompt });
-  }
   messages.push({ role: "user", content: task });
 
   const result = await agent.invoke({ messages });

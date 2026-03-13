@@ -104,19 +104,7 @@ export async function fundAgentWallet(options: FundAgentOptions): Promise<string
   const { agentAddress, amountEth = "0.001" } = options;
   const master = getMasterWallet();
 
-  // Check master wallet balance before attempting to fund
-  const balance = await master.provider!.getBalance(master.address);
   const amountWei = ethers.parseEther(amountEth);
-
-  if (balance < amountWei) {
-    throw new Error(
-      `Master wallet balance too low to fund agent.\n` +
-        `  Master address: ${master.address}\n` +
-        `  Balance: ${ethers.formatEther(balance)} ETH\n` +
-        `  Required: ${amountEth} ETH\n` +
-        `Fund the master wallet and try again.`
-    );
-  }
 
   console.log(`[wallet] Funding agent ${agentAddress} with ${amountEth} ETH from master wallet...`);
   const tx = await master.sendTransaction({

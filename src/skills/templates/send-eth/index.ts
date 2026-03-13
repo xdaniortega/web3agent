@@ -1,5 +1,8 @@
 /**
- * Send ETH skill — transfer ETH from the agent wallet to any address.
+ * Send ETH skill — transfer ETH via the configured RPC (Alchemy).
+ *
+ * Explicitly estimates gas and nonce before sending to avoid
+ * common issues with Arbitrum Sepolia RPC nodes.
  */
 
 import { ethers } from "ethers";
@@ -21,14 +24,47 @@ export function createSkill(agentPrivateKey: string): DynamicStructuredTool {
       try {
         const provider = getProvider();
         const wallet = new ethers.Wallet(agentPrivateKey, provider);
+        const value = ethers.parseEther(amount);
 
-        console.log(`[send-eth] Sending ${amount} ETH to ${toAddress}...`);
+        // Check balance first
+        const balance = await provider.getBalance(wallet.address);
+        if (balance < value) {
+          return JSON.stringify({
+            success: false,
+            error: `Insufficient balance. Have ${ethers.formatEther(balance)} ETH, need ${amount} ETH.`,
+          });
+        }
 
-        const tx = await wallet.sendTransaction({
+        // Build transaction with explicit gas parameters
+        const nonce = await provider.getTransactionCount(wallet.address, "latest");
+        const feeData = await provider.getFeeData();
+
+        const txRequest: ethers.TransactionRequest = {
           to: toAddress,
-          value: ethers.parseEther(amount),
-        });
+          value,
+          nonce,
+          type: 2, // EIP-1559
+          chainId: (await provider.getNetwork()).chainId,
+        };
 
+        // Set gas price fields
+        if (feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
+          txRequest.maxFeePerGas = feeData.maxFeePerGas;
+          txRequest.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
+        } else if (feeData.gasPrice) {
+          txRequest.type = 0;
+          txRequest.gasPrice = feeData.gasPrice;
+        }
+
+        // Estimate gas
+        const gasEstimate = await provider.estimateGas(txRequest);
+        txRequest.gasLimit = gasEstimate * 120n / 100n; // 20% buffer
+
+        console.log(`[send-eth] Sending ${amount} ETH to ${toAddress}`);
+        console.log(`[send-eth] From: ${wallet.address}`);
+        console.log(`[send-eth] Nonce: ${nonce}, Gas limit: ${txRequest.gasLimit}`);
+
+        const tx = await wallet.sendTransaction(txRequest);
         console.log(`[send-eth] TX hash: ${tx.hash}`);
         console.log(`[send-eth] Waiting for confirmation...`);
 
@@ -38,10 +74,14 @@ export function createSkill(agentPrivateKey: string): DynamicStructuredTool {
           success: true,
           txHash: tx.hash,
           blockNumber: receipt?.blockNumber,
+          gasUsed: receipt?.gasUsed?.toString(),
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        return JSON.stringify({ success: false, error: message });
+        // Extract useful info from RPC errors
+        const shortMsg = message.length > 300 ? message.slice(0, 300) + "..." : message;
+        console.error(`[send-eth] Failed: ${shortMsg}`);
+        return JSON.stringify({ success: false, error: shortMsg });
       }
     },
   });

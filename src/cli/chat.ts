@@ -1,5 +1,5 @@
 /**
- * Interactive chat with an onchain agent.
+ * Interactive chat with an onchain agent. Conversation persists across restarts.
  *
  * Usage:
  *   npm run chat                          # default chat-agent
@@ -11,11 +11,8 @@ import dotenv from "dotenv";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { getLLM } from "../core/llm.js";
 import { getOrCreateAgentWallet } from "../core/wallet.js";
-import {
-  discoverAgentSkills,
-  resolveAgentSkills,
-  buildSkillSystemPrompt,
-} from "../core/agent-skills.js";
+import { discoverAgentSkills, resolveAgentSkills } from "../core/agent-skills.js";
+import { createFileCheckpointer } from "../core/file-checkpoint.js";
 
 dotenv.config();
 
@@ -30,10 +27,9 @@ const agentName = getFlag("agent") || "chat-agent";
 async function main() {
   const wallet = getOrCreateAgentWallet({ agentName });
 
-  const configs = discoverAgentSkills(agentName);
-  const skillNames = configs.map((c) => c.name);
+  const skillNames = discoverAgentSkills(agentName).map((c) => c.name);
   const tools = await resolveAgentSkills(agentName, wallet.privateKey);
-  const systemPrompt = buildSkillSystemPrompt(configs);
+  const { saver, flush } = createFileCheckpointer(agentName);
 
   console.log();
   console.log("=".repeat(60));
@@ -49,11 +45,11 @@ async function main() {
   console.log();
 
   const llm = getLLM();
-  const agent = createReactAgent({ llm, tools });
-  const threadId = `chat-${Date.now()}`;
+  const agent = createReactAgent({ llm, tools, checkpointSaver: saver });
+  const threadId = agentName; // stable thread per agent
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  rl.on("close", () => { console.log("\nGoodbye!\n"); process.exit(0); });
+  rl.on("close", () => { flush(); console.log("\nGoodbye!\n"); process.exit(0); });
 
   const prompt = () => {
     rl.question("you > ", async (input) => {
@@ -62,14 +58,12 @@ async function main() {
       if (trimmed.toLowerCase() === "exit") { rl.close(); return; }
 
       try {
-        const messages: { role: string; content: string }[] = [];
-        if (systemPrompt) messages.push({ role: "system", content: systemPrompt });
-        messages.push({ role: "user", content: trimmed });
-
         const result = await agent.invoke(
-          { messages },
+          { messages: [{ role: "user", content: trimmed }] },
           { configurable: { thread_id: threadId } }
         );
+        flush();
+
         const last = result.messages[result.messages.length - 1];
         const text = typeof last.content === "string" ? last.content : JSON.stringify(last.content, null, 2);
         console.log(`\nagent > ${text}\n`);

@@ -12,6 +12,7 @@ dist/
 # Agent runtime data — NEVER commit (contains private keys)
 agents/*/wallet.json
 agents/*/skills/
+agents/*/memory.json
 
 # Claude Code local settings
 .claude/
