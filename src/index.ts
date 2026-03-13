@@ -8,7 +8,7 @@
  */
 
 // --- Configuration ---
-export { getActiveNetwork, getNetworkConfig, getProvider, getChainId } from "./config.js";
+export { getActiveNetwork, getNetworkConfig, getProvider, getRpcUrl, getChainId } from "./config.js";
 
 // --- Wallet Management ---
 export {

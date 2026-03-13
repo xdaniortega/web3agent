@@ -8,7 +8,7 @@
     Deploy autonomous AI agents on Arbitrum with isolated wallets, onchain skills, and ERC-8004 identity registration
   </p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Node.js 18+](https://img.shields.io/badge/Node.js-18%2B-green.svg?style=flat-square&logo=node.js)](https://nodejs.org)
 [![Claude](https://img.shields.io/badge/Powered%20by-Claude-8B5CF6.svg?style=flat-square)](https://anthropic.com)
 [![Arbitrum](https://img.shields.io/badge/Network-Arbitrum-28A0F0.svg?style=flat-square)](https://arbitrum.io)
@@ -27,7 +27,6 @@
 - [Skills](#skills)
 - [Networks](#networks)
 - [Security](#security)
-- [Roadmap](#roadmap)
 - [Documentation](#documentation)
 
 ---
@@ -119,11 +118,8 @@ Copy `.env.example` to `.env` and fill in:
 |----------|----------|-------------|
 | `ANTHROPIC_API_KEY` | Yes | Claude API key |
 | `NETWORK` | No | `arbitrum-sepolia` (default), `arbitrum-one`, or `robinhood-testnet` |
-| `ALCHEMY_ARBITRUM_SEPOLIA_KEY` | Yes* | Alchemy API key for Sepolia |
-| `ALCHEMY_ARBITRUM_ONE_KEY` | Yes* | Alchemy API key for mainnet |
+| `RPC_URL` | Yes | Full RPC endpoint URL including API key |
 | `MASTER_PRIVATE_KEY` | Yes | Private key of the wallet that funds agents |
-
-*Only the key for your active network is required.
 
 ---
 
@@ -232,17 +228,6 @@ Set the active network via the `NETWORK` environment variable. See [`docs/networ
 
 ---
 
-## Roadmap
-
-This SDK is the foundation (Pill 1) of a larger Arbitrum AgentKit:
-
-- **Pill 2** — ZeroDev smart wallets for gasless agent transactions
-- **Pill 3** — A2A/MCP communication between agents
-- **Pill 4** — x402 payments for agent-to-agent commerce
-- **Pill 5** — Onchain reputation and trust scoring
-
----
-
 ## Documentation
 
 | Doc | Description |
@@ -259,4 +244,4 @@ This SDK is the foundation (Pill 1) of a larger Arbitrum AgentKit:
 
 ## License
 
-MIT, see [LICENSE](./LICENSE).
+Apache 2.0, see [LICENSE](./LICENSE).

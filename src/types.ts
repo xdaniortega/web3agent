@@ -12,10 +12,8 @@ export interface NetworkConfig {
   name: string;
   /** EVM chain ID. */
   chainId: number;
-  /** Alchemy RPC URL template — `{key}` is replaced at runtime. */
-  rpcUrlTemplate: string;
-  /** Environment variable name for the Alchemy API key. */
-  alchemyKeyEnvVar: string;
+  /** Default RPC URL used when RPC_URL is not set. */
+  defaultRpcUrl: string;
 }
 
 /** Persisted wallet data stored in agents/<name>/wallet.json. */

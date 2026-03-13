@@ -25,7 +25,7 @@ Fill in the required values in `.env`:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `ANTHROPIC_API_KEY` | Yes | Your Anthropic API key |
-| `ALCHEMY_ARBITRUM_SEPOLIA_KEY` | Yes (for Sepolia) | Alchemy API key for Arbitrum Sepolia |
+| `RPC_URL` | Yes | Full RPC endpoint URL (e.g. `https://arb-sepolia.g.alchemy.com/v2/YOUR_KEY`) |
 | `MASTER_PRIVATE_KEY` | Yes | Private key of the master funding wallet |
 | `NETWORK` | No | Defaults to `arbitrum-sepolia` |
 

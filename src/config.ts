@@ -14,21 +14,18 @@ const NETWORKS: Record<NetworkName, NetworkConfig> = {
   "arbitrum-sepolia": {
     name: "Arbitrum Sepolia",
     chainId: 421614,
-    rpcUrlTemplate: "https://arb-sepolia.g.alchemy.com/v2/{key}",
-    alchemyKeyEnvVar: "ALCHEMY_ARBITRUM_SEPOLIA_KEY",
+    defaultRpcUrl: "https://arb-sepolia.g.alchemy.com/v2",
   },
   "arbitrum-one": {
     name: "Arbitrum One",
     chainId: 42161,
-    rpcUrlTemplate: "https://arb-mainnet.g.alchemy.com/v2/{key}",
-    alchemyKeyEnvVar: "ALCHEMY_ARBITRUM_ONE_KEY",
+    defaultRpcUrl: "https://arb-mainnet.g.alchemy.com/v2",
   },
   // NOTE: Chain ID 23888 for Robinhood Testnet should be verified before production use.
   "robinhood-testnet": {
     name: "Robinhood Testnet",
     chainId: 23888,
-    rpcUrlTemplate: "https://robinhood-testnet.g.alchemy.com/v2/{key}",
-    alchemyKeyEnvVar: "ALCHEMY_ROBINHOOD_TESTNET_KEY",
+    defaultRpcUrl: "https://robinhood-testnet.g.alchemy.com/v2",
   },
 };
 
@@ -61,26 +58,38 @@ export function getNetworkConfig(network?: NetworkName): NetworkConfig {
 }
 
 /**
+ * Returns the RPC endpoint URL for the active network.
+ *
+ * Uses the RPC_URL environment variable if set, otherwise falls back
+ * to the network's default RPC URL.
+ *
+ * @param network - The network name. Defaults to the active network.
+ * @returns The RPC endpoint URL.
+ * @throws If RPC_URL is not set.
+ */
+export function getRpcUrl(network?: NetworkName): string {
+  const rpcUrl = process.env.RPC_URL;
+  if (!rpcUrl) {
+    throw new Error(
+      `Missing RPC endpoint. Set the RPC_URL environment variable.\n` +
+        `Example: https://arb-sepolia.g.alchemy.com/v2/YOUR_API_KEY`
+    );
+  }
+  return rpcUrl;
+}
+
+/**
  * Returns an ethers JsonRpcProvider for the active network.
  *
- * Reads the Alchemy API key from the corresponding environment variable.
+ * Uses the RPC_URL environment variable as the endpoint.
  *
  * @param network - The network name. Defaults to the active network.
  * @returns A configured ethers JsonRpcProvider.
- * @throws If the required Alchemy API key environment variable is not set.
+ * @throws If RPC_URL is not set.
  */
 export function getProvider(network?: NetworkName): ethers.JsonRpcProvider {
   const config = getNetworkConfig(network);
-  const apiKey = process.env[config.alchemyKeyEnvVar];
-
-  if (!apiKey) {
-    throw new Error(
-      `Missing Alchemy API key. Set the ${config.alchemyKeyEnvVar} environment variable.\n` +
-        `Get a free key at https://dashboard.alchemy.com/`
-    );
-  }
-
-  const rpcUrl = config.rpcUrlTemplate.replace("{key}", apiKey);
+  const rpcUrl = getRpcUrl(network);
   return new ethers.JsonRpcProvider(rpcUrl, config.chainId);
 }
 

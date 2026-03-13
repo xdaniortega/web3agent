@@ -13,7 +13,7 @@
 
 import { SDK } from "@blockbyvlog/agent0-sdk";
 import type { RegisterAgentOptions, RegistrationResult } from "./types.js";
-import { getActiveNetwork, getNetworkConfig } from "./config.js";
+import { getActiveNetwork, getNetworkConfig, getRpcUrl } from "./config.js";
 
 /**
  * Registers an agent on the ERC-8004 Identity Registry.
@@ -55,14 +55,8 @@ export async function registerAgent(
 
   console.log(`[registry] Registering agent "${name}" on ERC-8004 (${network})...`);
 
-  // Construct the Alchemy RPC URL
-  const alchemyKey = process.env[config.alchemyKeyEnvVar];
-  if (!alchemyKey) {
-    throw new Error(
-      `Missing Alchemy API key for registration. Set ${config.alchemyKeyEnvVar}.`
-    );
-  }
-  const rpcUrl = config.rpcUrlTemplate.replace("{key}", alchemyKey);
+  // Get the RPC URL
+  const rpcUrl = getRpcUrl();
 
   // Initialize the SDK with chain configuration and the agent's private key.
   // To switch to Pinata IPFS mode:

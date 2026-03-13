@@ -2,11 +2,11 @@
 
 ## Supported networks
 
-| Network | Chain ID | Env var for Alchemy key | Default |
-|---------|----------|------------------------|---------|
-| `arbitrum-sepolia` | 421614 | `ALCHEMY_ARBITRUM_SEPOLIA_KEY` | Yes |
-| `arbitrum-one` | 42161 | `ALCHEMY_ARBITRUM_ONE_KEY` | No |
-| `robinhood-testnet` | 23888 | `ALCHEMY_ROBINHOOD_TESTNET_KEY` | No |
+| Network | Chain ID | Default |
+|---------|----------|---------|
+| `arbitrum-sepolia` | 421614 | Yes |
+| `arbitrum-one` | 42161 | No |
+| `robinhood-testnet` | 23888 | No |
 
 Note: The Robinhood Testnet chain ID (23888) should be verified before production use.
 
@@ -26,12 +26,15 @@ NETWORK=arbitrum-one npx tsx scripts/test-workflow.ts
 
 If `NETWORK` is not set, it defaults to `arbitrum-sepolia`.
 
-## Getting an Alchemy API key
+## Configuring the RPC endpoint
 
-1. Go to [dashboard.alchemy.com](https://dashboard.alchemy.com/)
-2. Create a new app for the Arbitrum network you need
-3. Copy the API key (not the full URL)
-4. Set it in your `.env` file
+Set `RPC_URL` in your `.env` to the full endpoint URL including the API key:
+
+```bash
+RPC_URL=https://arb-sepolia.g.alchemy.com/v2/YOUR_API_KEY
+```
+
+You can get a key from [dashboard.alchemy.com](https://dashboard.alchemy.com/) or use any compatible RPC provider.
 
 ## Getting testnet ETH
 
