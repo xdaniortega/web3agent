@@ -10,6 +10,10 @@
 // --- Configuration ---
 export { getActiveNetwork, getNetworkConfig, getProvider, getRpcUrl, getChainId } from "./config.js";
 
+// --- LLM ---
+export { getLLM } from "./llm.js";
+export type { LLMProvider } from "./llm.js";
+
 // --- Wallet Management ---
 export {
   getOrCreateAgentWallet,

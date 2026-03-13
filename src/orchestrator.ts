@@ -1,5 +1,5 @@
 /**
- * Agent orchestration layer using LangChain.js with Claude.
+ * Agent orchestration layer using LangChain.js.
  *
  * This module creates and runs autonomous agents that can execute onchain
  * actions via attached skills (LangChain tools).
@@ -7,21 +7,15 @@
  * @module orchestrator
  */
 
-import { ChatAnthropic } from "@langchain/anthropic";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { getLLM } from "./llm.js";
 import { resolveSkills } from "./skills/index.js";
 import type { RunAgentOptions, AgentRunResult } from "./types.js";
 
 /**
- * Default Claude model used by the orchestrator.
- * Uses Claude Sonnet (latest available).
- */
-const DEFAULT_MODEL = "claude-sonnet-4-20250514";
-
-/**
  * Runs an autonomous agent with the specified task and skills.
  *
- * The agent uses Claude Sonnet via LangChain.js and can execute onchain
+ * The agent uses the configured LLM provider via LangChain.js and can execute onchain
  * actions through attached skills (DynamicStructuredTool instances).
  *
  * Streaming is disabled by default. To enable streaming output, set
@@ -36,7 +30,7 @@ const DEFAULT_MODEL = "claude-sonnet-4-20250514";
  *
  * @param options - Agent run options including task, skills, and private key.
  * @returns The agent's final output and intermediate step logs.
- * @throws If the ANTHROPIC_API_KEY is not set.
+ * @throws If the required LLM API key is not set.
  * @throws If more than 3 skills are requested.
  *
  * @example
@@ -52,12 +46,6 @@ const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 export async function runAgent(options: RunAgentOptions): Promise<AgentRunResult> {
   const { task, privateKey, skills = [], streaming = false } = options;
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    throw new Error(
-      "ANTHROPIC_API_KEY is not set. Get a key at https://console.anthropic.com/"
-    );
-  }
-
   console.log(`[orchestrator] Starting agent run.`);
   console.log(`[orchestrator] Task: ${task}`);
   console.log(`[orchestrator] Skills: ${skills.length > 0 ? skills.join(", ") : "none"}`);
@@ -65,13 +53,8 @@ export async function runAgent(options: RunAgentOptions): Promise<AgentRunResult
   // Resolve skill names to LangChain tool instances
   const tools = skills.length > 0 ? resolveSkills(skills, privateKey) : [];
 
-  // Initialize Claude as the LLM
-  const llm = new ChatAnthropic({
-    model: DEFAULT_MODEL,
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-    // Streaming is disabled by default. Set to true to enable token-by-token output.
-    streaming,
-  });
+  // Initialize the LLM from the configured provider
+  const llm = await getLLM({ streaming });
 
   // Create a ReAct agent using LangGraph
   // Human-in-the-loop is disabled by default. To enable:

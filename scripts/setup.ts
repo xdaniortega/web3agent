@@ -131,7 +131,9 @@ qrcode.generate(address, { small: true }, (code: string) => {
   }
 
   console.log("  2. Fill in the remaining .env values:");
-  console.log("     - ANTHROPIC_API_KEY  (from https://console.anthropic.com)");
+  console.log("     - OPENROUTER_API_KEY (from https://openrouter.ai/keys)");
+  console.log("       Or set LLM_PROVIDER=anthropic and ANTHROPIC_API_KEY");
+  console.log("       Or set LLM_PROVIDER=openai and OPENAI_API_KEY");
   console.log("     - RPC_URL           (from https://dashboard.alchemy.com)");
   console.log();
   console.log("  3. Run the test workflow:");
