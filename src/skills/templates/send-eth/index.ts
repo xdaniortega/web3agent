@@ -1,8 +1,5 @@
 /**
- * Send ETH skill — transfer ETH via the configured RPC (Alchemy).
- *
- * Explicitly estimates gas and nonce before sending to avoid
- * common issues with Arbitrum Sepolia RPC nodes.
+ * Send ETH skill — transfer ETH via the configured RPC.
  */
 
 import { ethers } from "ethers";
@@ -35,36 +32,10 @@ export function createSkill(agentPrivateKey: string): DynamicStructuredTool {
           });
         }
 
-        // Build transaction with explicit gas parameters
-        const nonce = await provider.getTransactionCount(wallet.address, "latest");
-        const feeData = await provider.getFeeData();
+        console.log(`[send-eth] Sending ${amount} ETH from ${wallet.address} to ${toAddress}`);
 
-        const txRequest: ethers.TransactionRequest = {
-          to: toAddress,
-          value,
-          nonce,
-          type: 2, // EIP-1559
-          chainId: (await provider.getNetwork()).chainId,
-        };
+        const tx = await wallet.sendTransaction({ to: toAddress, value });
 
-        // Set gas price fields
-        if (feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
-          txRequest.maxFeePerGas = feeData.maxFeePerGas;
-          txRequest.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
-        } else if (feeData.gasPrice) {
-          txRequest.type = 0;
-          txRequest.gasPrice = feeData.gasPrice;
-        }
-
-        // Estimate gas
-        const gasEstimate = await provider.estimateGas(txRequest);
-        txRequest.gasLimit = gasEstimate * 120n / 100n; // 20% buffer
-
-        console.log(`[send-eth] Sending ${amount} ETH to ${toAddress}`);
-        console.log(`[send-eth] From: ${wallet.address}`);
-        console.log(`[send-eth] Nonce: ${nonce}, Gas limit: ${txRequest.gasLimit}`);
-
-        const tx = await wallet.sendTransaction(txRequest);
         console.log(`[send-eth] TX hash: ${tx.hash}`);
         console.log(`[send-eth] Waiting for confirmation...`);
 
@@ -74,14 +45,12 @@ export function createSkill(agentPrivateKey: string): DynamicStructuredTool {
           success: true,
           txHash: tx.hash,
           blockNumber: receipt?.blockNumber,
-          gasUsed: receipt?.gasUsed?.toString(),
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        // Extract useful info from RPC errors
-        const shortMsg = message.length > 300 ? message.slice(0, 300) + "..." : message;
-        console.error(`[send-eth] Failed: ${shortMsg}`);
-        return JSON.stringify({ success: false, error: shortMsg });
+        const short = message.length > 300 ? message.slice(0, 300) + "..." : message;
+        console.error(`[send-eth] Failed: ${short}`);
+        return JSON.stringify({ success: false, error: short });
       }
     },
   });

@@ -3,12 +3,13 @@
  *
  * Usage:
  *   npm run deploy -- --name my-agent
- *   npm run deploy -- --name my-agent --skip-register  # skip ERC-8004 registration
- *   npm run deploy -- --name my-agent --fund 0.005     # custom fund amount
+ *   npm run deploy -- --name my-agent --skip-register
+ *   npm run deploy -- --name my-agent --fund 0.005
  */
 
 import * as readline from "node:readline";
 import dotenv from "dotenv";
+import * as p from "@clack/prompts";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { getLLM } from "../core/llm.js";
 import { getActiveNetwork, getNetworkConfig, getProvider } from "../core/config.js";
@@ -40,54 +41,10 @@ function hasFlag(name: string): boolean {
   return args.includes(`--${name}`);
 }
 
-const agentName = getFlag("name") || `agent-${Date.now()}`;
-const fundAmount = getFlag("fund") || "0.002";
 const skipRegister = hasFlag("skip-register");
 
 // ---------------------------------------------------------------------------
-// Skill selection prompt
-// ---------------------------------------------------------------------------
-async function selectSkills(): Promise<string[]> {
-  const available = listSkillTemplates();
-  if (available.length === 0) {
-    console.log("  No skill templates available.\n");
-    return [];
-  }
-
-  console.log("  Available skills:");
-  available.forEach((s, i) => console.log(`    ${i + 1}. ${s}`));
-  console.log(`    0. Done (proceed with selected skills)`);
-  console.log();
-
-  const selected: string[] = [];
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-
-  return new Promise((resolve) => {
-    const ask = () => {
-      const label = selected.length > 0 ? ` [selected: ${selected.join(", ")}]` : "";
-      rl.question(`  Pick a skill (1-${available.length}) or 0 to finish${label}: `, (answer) => {
-        const num = parseInt(answer.trim(), 10);
-        if (num === 0 || isNaN(num)) {
-          rl.close();
-          resolve(selected);
-          return;
-        }
-        if (num >= 1 && num <= available.length) {
-          const skill = available[num - 1];
-          if (!selected.includes(skill)) {
-            selected.push(skill);
-            console.log(`  + Added ${skill}`);
-          }
-        }
-        ask();
-      });
-    };
-    ask();
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Interactive chat
+// Interactive chat (post-deploy)
 // ---------------------------------------------------------------------------
 async function startChat(
   agentName: string,
@@ -99,16 +56,11 @@ async function startChat(
   const { saver, flush } = createFileCheckpointer(agentName);
 
   console.log();
-  console.log("=".repeat(60));
-  console.log("  AGENT CHAT");
-  console.log("=".repeat(60));
-  console.log();
   console.log(`  Agent  : ${agentName}`);
   console.log(`  Skills : ${skillNames.join(", ") || "none"}`);
   console.log(`  Master : ${masterAddress}`);
   console.log();
   console.log('  Type your message and press Enter. Type "exit" to quit.');
-  console.log("=".repeat(60));
   console.log();
 
   const llm = getLLM();
@@ -125,18 +77,42 @@ async function startChat(
       if (trimmed.toLowerCase() === "exit") { rl.close(); return; }
 
       try {
+        const prevState = await agent.getState({ configurable: { thread_id: threadId } });
+        const prevCount = prevState?.values?.messages?.length ?? 0;
+
         const result = await agent.invoke(
           { messages: [{ role: "user", content: trimmed }] },
           { configurable: { thread_id: threadId } }
         );
         flush();
 
-        const last = result.messages[result.messages.length - 1];
+        const allMessages = result.messages;
+        const newMessages = allMessages.slice(prevCount);
+
+        for (const msg of newMessages) {
+          const role = (msg as any)._getType?.() ?? "unknown";
+          const content = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content);
+
+          if (role === "ai" && (msg as any).tool_calls?.length) {
+            const calls = (msg as any).tool_calls;
+            for (const tc of calls) {
+              console.log(`\n  [calling ${tc.name}] ${JSON.stringify(tc.args)}`);
+            }
+          } else if (role === "tool") {
+            console.log(`  [result] ${content.slice(0, 500)}`);
+          }
+        }
+
+        const last = allMessages[allMessages.length - 1];
         const text = typeof last.content === "string"
           ? last.content
           : JSON.stringify(last.content, null, 2);
 
-        console.log(`\nagent > ${text}\n`);
+        if (text.trim()) {
+          console.log(`\nagent > ${text}\n`);
+        } else {
+          console.log(`\nagent > (no response)\n`);
+        }
       } catch (err: unknown) {
         console.error(`\n[error] ${err instanceof Error ? err.message : String(err)}\n`);
       }
@@ -150,55 +126,93 @@ async function startChat(
 // Main
 // ---------------------------------------------------------------------------
 async function main(): Promise<void> {
-  console.log();
-  console.log("=".repeat(60));
-  console.log("  DEPLOY AGENT");
-  console.log("=".repeat(60));
-  console.log();
+  p.intro("Deploy Agent");
 
+  // --- Network info ---
   const network = getActiveNetwork();
   const networkConfig = getNetworkConfig();
-  console.log(`  Network : ${networkConfig.name} (${network})`);
-
   const masterWallet = getMasterWallet();
-  console.log(`  Master  : ${masterWallet.address}`);
-
   const masterBalance = await getMasterWalletBalance();
-  console.log(`  Balance : ${masterBalance} ETH`);
-  console.log();
 
-  console.log(`  Creating agent "${agentName}"...`);
-  const agentWallet = getOrCreateAgentWallet({ agentName });
-  console.log(`  Wallet  : ${agentWallet.address}`);
-  console.log();
+  p.note(
+    `Network : ${networkConfig.name} (${network})\n` +
+    `Master  : ${masterWallet.address}\n` +
+    `Balance : ${masterBalance} ETH`,
+    "Environment"
+  );
 
-  console.log("  Select skills to install:\n");
-  const selectedSkills = await selectSkills();
-  console.log();
+  // --- Agent name ---
+  const nameFromFlag = getFlag("name");
+  let agentName: string;
 
-  for (const skill of selectedSkills) {
-    scaffoldAgentSkill(agentName, skill);
+  if (nameFromFlag) {
+    agentName = nameFromFlag;
+  } else {
+    const nameResult = await p.text({
+      message: "Agent name",
+      placeholder: "my-agent",
+      validate: (v) => !v?.trim() ? "Name is required" : undefined,
+    });
+    if (p.isCancel(nameResult)) { p.cancel("Cancelled."); process.exit(0); }
+    agentName = nameResult;
   }
-  if (selectedSkills.length > 0) console.log();
 
-  console.log(`  Funding agent with ${fundAmount} ETH...`);
+  // --- Create wallet ---
+  const s = p.spinner();
+  s.start(`Creating agent "${agentName}"...`);
+  const agentWallet = getOrCreateAgentWallet({ agentName });
+  s.stop(`Agent wallet: ${agentWallet.address}`);
+
+  // --- Select skills ---
+  const available = listSkillTemplates();
+  if (available.length > 0) {
+    const skillResult = await p.multiselect({
+      message: "Select skills to install",
+      options: available.map((s) => ({ value: s, label: s })),
+      required: false,
+    });
+
+    if (p.isCancel(skillResult)) { p.cancel("Cancelled."); process.exit(0); }
+
+    const selectedSkills = skillResult as string[];
+    for (const skill of selectedSkills) {
+      scaffoldAgentSkill(agentName, skill);
+    }
+  }
+
+  // --- Fund amount ---
+  const fundFromFlag = getFlag("fund");
+  let fundAmount: string;
+
+  if (fundFromFlag) {
+    fundAmount = fundFromFlag;
+  } else {
+    const fundResult = await p.text({
+      message: "ETH to fund agent",
+      placeholder: "0.002",
+      initialValue: "0.002",
+    });
+    if (p.isCancel(fundResult)) { p.cancel("Cancelled."); process.exit(0); }
+    fundAmount = fundResult || "0.002";
+  }
+
+  // --- Fund agent ---
+  s.start(`Funding agent with ${fundAmount} ETH...`);
   try {
     const txHash = await fundAgentWallet({
       agentAddress: agentWallet.address,
       amountEth: fundAmount,
     });
-    console.log(`  TX: ${txHash}`);
     const provider = getProvider();
     const receipt = await provider.waitForTransaction(txHash);
-    console.log(`  Confirmed in block ${receipt?.blockNumber}`);
+    s.stop(`Funded (block ${receipt?.blockNumber}): ${txHash}`);
   } catch (err) {
-    console.error(`  Funding failed: ${err instanceof Error ? err.message : err}`);
-    console.log("  The agent has no balance — transactions will fail.");
+    s.stop(`Funding failed: ${err instanceof Error ? err.message : err}`);
   }
-  console.log();
 
+  // --- Registration ---
   if (!skipRegister) {
-    console.log("  Registering on ERC-8004...");
+    s.start("Registering on ERC-8004...");
     try {
       const reg = await registerAgent({
         name: agentName,
@@ -206,36 +220,46 @@ async function main(): Promise<void> {
         privateKey: agentWallet.privateKey,
         walletAddress: agentWallet.address,
       });
-      console.log(`  Registered. Agent ID: ${reg.agentId}`);
+      s.stop(`Registered. Agent ID: ${reg.agentId}`);
     } catch (err) {
-      console.error(`  Registration failed: ${err instanceof Error ? err.message : err}`);
+      s.stop(`Registration failed: ${err instanceof Error ? err.message : err}`);
     }
-    console.log();
   } else {
-    console.log("  Skipping ERC-8004 registration (--skip-register).\n");
+    p.log.info("Skipping ERC-8004 registration (--skip-register)");
   }
 
+  // --- Summary ---
   const provider = getProvider();
   const agentBalance = await provider.getBalance(agentWallet.address);
   const { ethers } = await import("ethers");
-  const agentBalanceEth = ethers.formatEther(agentBalance);
 
-  console.log("=".repeat(60));
-  console.log("  AGENT DEPLOYED");
-  console.log("=".repeat(60));
-  console.log();
-  console.log(`  Name    : ${agentName}`);
-  console.log(`  Wallet  : ${agentWallet.address}`);
-  console.log(`  Balance : ${agentBalanceEth} ETH`);
-  console.log(`  Skills  : ${selectedSkills.join(", ") || "none"}`);
-  console.log(`  Master  : ${masterWallet.address}`);
-  console.log();
-  console.log("  Opening interactive chat...");
+  const discoveredSkills = discoverAgentSkills(agentName).map((c) => c.name);
 
+  p.note(
+    `Name    : ${agentName}\n` +
+    `Wallet  : ${agentWallet.address}\n` +
+    `Balance : ${ethers.formatEther(agentBalance)} ETH\n` +
+    `Skills  : ${discoveredSkills.join(", ") || "none"}\n` +
+    `Master  : ${masterWallet.address}`,
+    "Agent Deployed"
+  );
+
+  // --- Open chat ---
+  const chatResult = await p.confirm({
+    message: "Open interactive chat?",
+    initialValue: true,
+  });
+
+  if (p.isCancel(chatResult) || !chatResult) {
+    p.outro("Done. Run `npm run chat -- --agent " + agentName + "` to chat later.");
+    return;
+  }
+
+  p.outro("Starting chat...");
   await startChat(agentName, agentWallet.privateKey, masterWallet.address);
 }
 
 main().catch((err) => {
-  console.error(`[deploy] Fatal: ${err instanceof Error ? err.message : err}`);
+  p.cancel(`Fatal: ${err instanceof Error ? err.message : err}`);
   process.exit(1);
 });

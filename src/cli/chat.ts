@@ -58,15 +58,41 @@ async function main() {
       if (trimmed.toLowerCase() === "exit") { rl.close(); return; }
 
       try {
+        // Count messages before invoke to find new ones after
+        const prevState = await agent.getState({ configurable: { thread_id: threadId } });
+        const prevCount = prevState?.values?.messages?.length ?? 0;
+
         const result = await agent.invoke(
           { messages: [{ role: "user", content: trimmed }] },
           { configurable: { thread_id: threadId } }
         );
         flush();
 
-        const last = result.messages[result.messages.length - 1];
+        // Show only new messages from this turn
+        const allMessages = result.messages;
+        const newMessages = allMessages.slice(prevCount);
+
+        for (const msg of newMessages) {
+          const role = (msg as any)._getType?.() ?? "unknown";
+          const content = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content);
+
+          if (role === "ai" && (msg as any).tool_calls?.length) {
+            const calls = (msg as any).tool_calls;
+            for (const tc of calls) {
+              console.log(`\n  [calling ${tc.name}] ${JSON.stringify(tc.args)}`);
+            }
+          } else if (role === "tool") {
+            console.log(`  [result] ${content.slice(0, 500)}`);
+          }
+        }
+
+        const last = allMessages[allMessages.length - 1];
         const text = typeof last.content === "string" ? last.content : JSON.stringify(last.content, null, 2);
-        console.log(`\nagent > ${text}\n`);
+        if (text.trim()) {
+          console.log(`\nagent > ${text}\n`);
+        } else {
+          console.log(`\nagent > (no response)\n`);
+        }
       } catch (err: unknown) {
         console.error(`\n[error] ${err instanceof Error ? err.message : String(err)}\n`);
       }

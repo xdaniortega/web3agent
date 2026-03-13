@@ -6,7 +6,10 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "scripts": {
     "build": "tsc",
@@ -17,13 +20,19 @@
     "test": "npx tsx src/cli/test-workflow.ts"
   },
   "keywords": [
-    "arbitrum", "ai-agents", "web3", "langchain",
-    "erc-8004", "defi", "autonomous-agents"
+    "arbitrum",
+    "ai-agents",
+    "web3",
+    "langchain",
+    "erc-8004",
+    "defi",
+    "autonomous-agents"
   ],
   "license": "Apache-2.0",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "@blockbyvlog/agent0-sdk": "^1.5.6",
+    "@clack/prompts": "^1.1.0",
     "@langchain/anthropic": "^0.3.0",
     "@langchain/core": "^0.3.0",
     "@langchain/langgraph": "^0.2.0",
