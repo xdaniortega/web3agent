@@ -1,5 +1,5 @@
 {
-  "name": "web3agent-sdk",
+  "name": "create-agent",
   "version": "0.1.0",
   "description": "Deploy autonomous AI agents on Arbitrum with LangChain, isolated wallets, and ERC-8004 identity registration.",
   "type": "module",
