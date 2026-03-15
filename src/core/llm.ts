@@ -2,9 +2,9 @@
  * Multi-provider LLM abstraction.
  *
  * Supports three providers via LLM_PROVIDER env var:
- *   - openrouter (default) — any model via the @openrouter/sdk
- *   - anthropic            — Claude models via @langchain/anthropic
- *   - openai               — OpenAI models via @langchain/openai
+ *   - openrouter (default), any model via the @openrouter/sdk
+ *   - anthropic, Claude models via @langchain/anthropic
+ *   - openai, OpenAI models via @langchain/openai
  *
  * @module llm
  */
@@ -58,7 +58,7 @@ const DEFAULT_MODELS: Record<Provider, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// ChatOpenRouter — LangChain BaseChatModel backed by @openrouter/sdk
+// ChatOpenRouter, LangChain BaseChatModel backed by @openrouter/sdk
 // ---------------------------------------------------------------------------
 
 interface ChatOpenRouterInput extends BaseChatModelParams {
@@ -256,7 +256,7 @@ function jsonSchemaFromZod(schema: unknown): Record<string, unknown> {
     }
     try {
       const result = zodToJsonSchema(schema as any) as Record<string, unknown>;
-      // Remove $schema — some providers reject it
+      // Remove $schema, some providers reject it
       delete result.$schema;
       return result;
     } catch {
@@ -267,7 +267,7 @@ function jsonSchemaFromZod(schema: unknown): Record<string, unknown> {
 }
 
 // ---------------------------------------------------------------------------
-// getLLM — public factory
+// getLLM, public factory
 // ---------------------------------------------------------------------------
 
 /**

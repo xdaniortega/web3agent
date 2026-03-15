@@ -1,4 +1,4 @@
-# web3-agent-sdk / actions
+# web3agent / actions
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
 ![LangChain](https://img.shields.io/badge/LangChain-tools-green)
@@ -10,7 +10,7 @@ Composable onchain actions for AI agents on Arbitrum. Tools, skills, and dynamic
 
 ## Architecture
 
-Three levels of abstraction — pick the one that fits your use case:
+Three levels of abstraction, pick the one that fits your use case:
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -34,7 +34,7 @@ Three levels of abstraction — pick the one that fits your use case:
 
 **Level 1 — Actions** are opinionated bundles of tools + skill. Import an action, hand it to your agent, and go.
 
-**Level 2 — Tools** are individual `DynamicStructuredTool` instances. Pure execution — no reasoning layer. For advanced developers who want to compose their own agent logic.
+**Level 2 — Tools** are individual `DynamicStructuredTool` instances. Pure execution, no reasoning layer. For advanced developers who want to compose their own agent logic.
 
 **Level 3 — Dynamic** is a generic ABI-based tool factory. Pass any contract ABI and get usable LangChain tools back. For exploration and prototyping.
 
@@ -43,7 +43,7 @@ Three levels of abstraction — pick the one that fits your use case:
 ```typescript
 import { createReactAgent } from "@langchain/langgraph/prebuilt"
 import { ChatAnthropic } from "@langchain/anthropic"
-import { TransferEthAction } from "web3agent-sdk/actions"
+import { TransferEthAction } from "web3agent/actions"
 
 const transfer = TransferEthAction()
 
@@ -63,7 +63,7 @@ const result = await agent.invoke({
 Extract tools from an action and inject the skill context into your system prompt:
 
 ```typescript
-import { TransferEthAction } from "web3agent-sdk/actions"
+import { TransferEthAction } from "web3agent/actions"
 
 const transfer = TransferEthAction()
 
@@ -85,7 +85,7 @@ const systemPrompt = `You are an onchain agent.\n\n${transfer.skill.context}`
 Import individual tools without the skill wrapper:
 
 ```typescript
-import { sendEthTool, tokenBalanceTool } from "web3agent-sdk/actions"
+import { sendEthTool, tokenBalanceTool } from "web3agent/actions"
 
 // Use directly with a LangChain agent
 const tools = [sendEthTool, tokenBalanceTool]
@@ -98,10 +98,10 @@ const balance = await tokenBalanceTool.invoke({
 
 ## Dynamic contract tools (Level 3)
 
-Two tools that let the agent discover and call any verified contract at runtime — no pre-configuration needed:
+Two tools that let the agent discover and call any verified contract at runtime, no pre-configuration needed:
 
 ```typescript
-import { fetchContractAbiTool, callContractTool } from "web3agent-sdk/actions"
+import { fetchContractAbiTool, callContractTool } from "web3agent/actions"
 
 // Give both tools to your agent
 const tools = [fetchContractAbiTool, callContractTool]
@@ -200,4 +200,4 @@ Composable unit combining tools + skill. Level 1 of the actions architecture.
 
 ## Contributing
 
-Contributions are welcome. To add a new action, create the tool in `tools/`, the skill in `skills/`, and compose them as a factory function in `index.ts`. All tools must use `viem` for onchain interactions, `zod` for schemas, and must never throw — always return a string. Run `tsc --noEmit` and `vitest` before submitting.
+Contributions are welcome. To add a new action, create the tool in `tools/`, the skill in `skills/`, and compose them as a factory function in `index.ts`. All tools must use `viem` for onchain interactions, `zod` for schemas, and must never throw, always return a string. Run `tsc --noEmit` and `vitest` before submitting.

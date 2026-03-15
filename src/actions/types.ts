@@ -4,7 +4,7 @@ import type { DynamicStructuredTool } from "@langchain/core/tools"
 
 /**
  * @notice Prompt context injected into the agent system prompt.
- * Defines when and how to use tools — no execution capability.
+ * Defines when and how to use tools, no execution capability.
  */
 export interface Skill {
   name: string

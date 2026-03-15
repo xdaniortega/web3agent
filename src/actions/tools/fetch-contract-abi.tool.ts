@@ -21,7 +21,7 @@ export async function fetchAbi(address: string): Promise<Abi> {
   const res = await fetch(url)
   const data = (await res.json()) as { status: string; result: string }
   if (data.status !== "1") {
-    throw new Error(data.result || "Failed to fetch ABI — contract may not be verified")
+    throw new Error(data.result || "Failed to fetch ABI, contract may not be verified")
   }
   return JSON.parse(data.result) as Abi
 }
@@ -57,7 +57,7 @@ export const fetchContractAbiTool: DynamicStructuredTool = new DynamicStructured
       }
 
       const lines = functions.map((fn, i) => `${i + 1}. ${formatFunctionSig(fn)}`)
-      return `Contract ${address} — ${functions.length} functions:\n\n${lines.join("\n")}`
+      return `Contract ${address}, ${functions.length} functions:\n\n${lines.join("\n")}`
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       return `Error: ${message}`

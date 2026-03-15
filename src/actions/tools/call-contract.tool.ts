@@ -97,7 +97,7 @@ export const callContractTool: DynamicStructuredTool = new DynamicStructuredTool
       // Write call (nonpayable / payable)
       const privateKey = process.env.AGENT_PRIVATE_KEY
       if (!privateKey) {
-        return "Error: AGENT_PRIVATE_KEY environment variable is not set — cannot execute write calls"
+        return "Error: AGENT_PRIVATE_KEY environment variable is not set, cannot execute write calls"
       }
 
       const account = privateKeyToAccount(privateKey as `0x${string}`)

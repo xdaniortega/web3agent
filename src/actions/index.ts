@@ -3,13 +3,13 @@
 // Types
 export * from "./types.js"
 
-// Level 2 — standalone tools
+// Level 2, standalone tools
 export * from "./tools/index.js"
 
-// Skills — exported separately for advanced use
+// Skills, exported separately for advanced use
 export * from "./skills/index.js"
 
-// Level 1 — Actions (skill + tools bundled)
+// Level 1, Actions (skill + tools bundled)
 import { sendEthTool } from "./tools/send-eth.tool.js"
 import { tokenBalanceTool } from "./tools/token-balance.tool.js"
 import { transferEthSkill } from "./skills/transfer-eth.skill.js"

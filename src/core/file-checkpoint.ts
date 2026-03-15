@@ -59,7 +59,7 @@ export function createFileCheckpointer(agentName: string) {
       }
       console.log(`[memory] Loaded conversation from agents/${agentName}/memory.json`);
     } catch {
-      // Corrupted file — start fresh
+      // Corrupted file, start fresh
       console.warn(`[memory] Could not load memory file, starting fresh.`);
     }
   }

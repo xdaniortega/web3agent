@@ -1,4 +1,4 @@
-# Contributing to web3agent-sdk
+# Contributing to web3agent
 
 Thank you for contributing. This guide covers branch naming, commit format, PR process, and how to add a new skill.
 

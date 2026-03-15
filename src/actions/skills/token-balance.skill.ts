@@ -11,7 +11,7 @@ export const tokenBalanceSkill: Skill = {
   description: "Guidance for checking wallet balances",
   context: `
     When checking balances:
-    - If no address is specified, omit the address param — the tool defaults to your own wallet
+    - If no address is specified, omit the address param, the tool defaults to your own wallet
     - For ETH: call get_token_balance without tokenAddress
     - For ERC-20: call get_token_balance with the token contract address
     - Format response as: "{amount} {symbol}"

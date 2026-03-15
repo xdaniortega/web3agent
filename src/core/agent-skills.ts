@@ -3,8 +3,8 @@
  *
  * Each agent has its own skills under `agents/<name>/skills/<skill-name>/`.
  * A skill directory contains:
- *   - SKILL.md   — YAML frontmatter (name, description) + usage instructions
- *   - index.ts   — exports a createSkill factory
+ *   - SKILL.md, YAML frontmatter (name, description) + usage instructions
+ *   - index.ts, exports a createSkill factory
  *
  * @module agent-skills
  */
@@ -98,7 +98,7 @@ export async function resolveAgentSkills(
     if (!entry.isDirectory()) continue;
     const indexPath = path.join(skillsDir, entry.name, "index.ts");
     if (!fs.existsSync(indexPath)) {
-      console.warn(`[agent-skills] Skill "${entry.name}" has no index.ts — skipping.`);
+      console.warn(`[agent-skills] Skill "${entry.name}" has no index.ts, skipping.`);
       continue;
     }
 
@@ -106,7 +106,7 @@ export async function resolveAgentSkills(
       const mod = await import(pathToFileURL(indexPath).href);
       const factory: SkillFactory = mod.createSkill || mod.default;
       if (typeof factory !== "function") {
-        console.warn(`[agent-skills] Skill "${entry.name}" does not export createSkill — skipping.`);
+        console.warn(`[agent-skills] Skill "${entry.name}" does not export createSkill, skipping.`);
         continue;
       }
       tools.push(factory(agentPrivateKey));
