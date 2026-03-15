@@ -149,7 +149,7 @@ export function resolveToolsFromConfig(config: AgentConfig): ResolvedConfig {
   const actions = config.metadata?.actions ?? []
   const toolNames = config.metadata?.tools ?? []
 
-  // Actions — each provides tools + a skill
+  // Actions, each provides tools + a skill
   for (const actionName of actions) {
     const entry = ACTION_REGISTRY.find((a) => a.name === actionName)
     if (!entry) continue
@@ -163,7 +163,7 @@ export function resolveToolsFromConfig(config: AgentConfig): ResolvedConfig {
     }
   }
 
-  // Remaining tools from the tools list — skip duplicates already added by actions
+  // Remaining tools from the tools list, skip duplicates already added by actions
   for (const toolName of toolNames) {
     if (addedToolNames.has(toolName)) continue
     const instance = getStandaloneToolInstance(toolName)

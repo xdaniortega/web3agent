@@ -14,18 +14,18 @@ export const transferEthSkill: Skill = {
     Use the network from your system prompt (name and chain ID) for all responses.
 
     CHECKING BALANCES (get_token_balance):
-    - If no address is specified, omit the address param — the tool defaults to your own wallet
+    - If no address is specified, omit the address param, the tool defaults to your own wallet
     - For ETH: call get_token_balance without tokenAddress
     - For ERC-20: call get_token_balance with the token contract address
     - Format response as: "{amount} {symbol}"
 
     SENDING ETH (send_eth):
-    - When the user provides both a destination address and an amount, check balance and send immediately — do NOT ask for confirmation
+    - When the user provides both a destination address and an amount, check balance and send immediately, do NOT ask for confirmation
     - Only ask for confirmation if the amount exceeds 0.1 ETH
     - Only ask for missing info if the user did not provide address or amount
     - Validate the address starts with 0x and is 42 characters
     - After a successful send, return the block explorer link for the transaction
-    - If the transaction fails, return the revert reason clearly — do not retry automatically
+    - If the transaction fails, return the revert reason clearly, do not retry automatically
   `,
   examples: [
     {

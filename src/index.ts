@@ -1,5 +1,5 @@
 /**
- * web3agent-sdk — Deploy autonomous AI agents on Arbitrum.
+ * web3agent, deploy autonomous AI agents on Arbitrum.
  * @packageDocumentation
  */
 

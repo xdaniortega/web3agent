@@ -32,7 +32,7 @@ export function getOrCreateAgentWallet(options: WalletOptions): WalletData {
   const agentDir = path.join(AGENTS_DIR, agentName);
   const walletPath = path.join(agentDir, "wallet.json");
 
-  // Load existing wallet if present — never overwrite
+  // Load existing wallet if present, never overwrite
   if (fs.existsSync(walletPath)) {
     const raw = fs.readFileSync(walletPath, "utf-8");
     const data = JSON.parse(raw) as WalletData;

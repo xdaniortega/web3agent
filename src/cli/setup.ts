@@ -40,7 +40,7 @@ let privateKey = process.env.MASTER_PRIVATE_KEY;
 let generated = false;
 
 if (privateKey) {
-  console.log("Master wallet already configured in .env — skipping generation.\n");
+  console.log("Master wallet already configured in .env, skipping generation.\n");
 } else {
   const wallet = ethers.Wallet.createRandom();
   privateKey = wallet.privateKey;

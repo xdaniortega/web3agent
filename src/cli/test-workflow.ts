@@ -19,7 +19,7 @@ const AGENT_NAME = "test-agent";
 const FUND_AMOUNT = "0.002";
 
 async function main(): Promise<void> {
-  console.log("[test] === web3agent-sdk End-to-End Test ===\n");
+  console.log("[test] === web3agent End-to-End Test ===\n");
 
   const network = getActiveNetwork();
   const networkConfig = getNetworkConfig();

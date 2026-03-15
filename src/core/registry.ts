@@ -74,7 +74,7 @@ export async function registerAgent(
   // Create the agent metadata
   const agent = sdk.createAgent(name, description);
 
-  // Register using HTTP mode (default — no IPFS required)
+  // Register using HTTP mode (default, no IPFS required)
   // For IPFS mode, replace this with: const handle = await agent.registerIPFS();
   const agentHttpUri = `https://8004scan.com/api/agent/${walletAddress}`;
   const handle = await agent.registerHTTP(agentHttpUri);
