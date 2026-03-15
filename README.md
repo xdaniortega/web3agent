@@ -5,7 +5,7 @@
   </h1>
 
   <p style="font-size: 1.2em; max-width: 600px; margin: 0 auto;">
-    Deploy autonomous AI agents on Arbitrum with isolated wallets, onchain skills, and ERC-8004 identity registration
+    Deploy autonomous AI agents on Arbitrum with isolated wallets, onchain actions, and ERC-8004 identity registration
   </p>
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square)](https://www.apache.org/licenses/LICENSE-2.0)
@@ -43,8 +43,8 @@ npm run deploy -- --name my-agent
 
 ## What It Does
 
-- **Deploy agents** — Create isolated wallets, pick skills, fund from a master wallet, register on ERC-8004, and start chatting — all in one command.
-- **Per-agent skills** — Each agent gets its own `skills/` directory with SKILL.md instructions and executable TypeScript tools. Skills are auto-discovered at runtime.
+- **Deploy agents** — Create isolated wallets, fund from a master wallet, register on ERC-8004, and start chatting — all in one command.
+- **Three-level actions** — Composable onchain actions built on viem and LangChain. Level 1 (Actions) bundles tools + skills for quick setup. Level 2 (Tools) gives standalone `DynamicStructuredTool` instances. Level 3 (Dynamic) generates tools from any contract ABI.
 - **Multi-provider LLM** — Works with OpenRouter (default, auto-routes to best model), Anthropic (Claude), or OpenAI. Uses the `@openrouter/sdk` natively.
 
 ---
@@ -62,14 +62,19 @@ web3agent-sdk/
       agent-skills.ts   Skill discovery & dynamic loading
       registry.ts       ERC-8004 registration
       types.ts          Shared types
-    skills/
-      scaffold.ts       Install skill templates into agents
-      templates/
-        send-eth/       Send ETH to any address
-        token-balance/  Check ETH/ERC-20 balances
-        uniswap-swap/   Uniswap V3 token swaps
+    actions/
+      index.ts          Exports all three levels + action factories
+      types.ts          Skill & Action interfaces
+      tools/
+        send-eth.tool.ts        Send ETH (viem + DynamicStructuredTool)
+        token-balance.tool.ts   Check ETH/ERC-20 balances
+      skills/
+        send-eth.skill.ts       Agent prompt context for sending ETH
+        token-balance.skill.ts  Agent prompt context for balance checks
+      dynamic/
+        abi-tool.ts     Build tools from any contract ABI
     cli/
-      deploy.ts         Deploy an agent (wallet + skills + fund + register + chat)
+      deploy.ts         Deploy an agent (wallet + fund + register + chat)
       chat.ts           Interactive chat with an existing agent
       setup.ts          First-run master wallet setup
       test-workflow.ts  End-to-end test
@@ -77,7 +82,6 @@ web3agent-sdk/
   agents/               Runtime data (gitignored)
     <agent-name>/
       wallet.json       Agent private key (never committed)
-      skills/           Installed skill code + SKILL.md
 ```
 
 ---
@@ -86,7 +90,7 @@ web3agent-sdk/
 
 ### `npm run deploy`
 
-Full agent deployment: creates wallet, lets you pick skills, funds the agent, registers on ERC-8004, and opens an interactive chat.
+Full agent deployment: creates wallet, funds the agent, registers on ERC-8004, and opens an interactive chat.
 
 ```bash
 npm run deploy -- --name my-agent              # deploy with defaults
@@ -96,7 +100,7 @@ npm run deploy -- --name my-agent --skip-register  # skip ERC-8004
 
 ### `npm run chat`
 
-Open an interactive chat with an existing agent. Skills are auto-discovered from the agent's `skills/` directory.
+Open an interactive chat with an existing agent.
 
 ```bash
 npm run chat -- --agent my-agent
@@ -108,31 +112,48 @@ First-run setup. Generates a master wallet private key, saves it to `.env`, and 
 
 ### `npm run test`
 
-End-to-end test: creates an agent, installs token-balance skill, funds it, and asks the agent to check its balance.
+End-to-end test: creates an agent, funds it, and asks the agent to check its balance.
 
 ---
 
-## Skills
+## Actions
 
-Each agent has its own skills installed in `agents/<name>/skills/`. A skill is a directory containing:
+Actions use a three-level architecture. See [`src/actions/README.md`](./src/actions/README.md) for full documentation.
 
-- **`SKILL.md`** — YAML frontmatter (name, description) + markdown instructions injected into the LLM system prompt
-- **`index.ts`** — exports a `createSkill(privateKey) => DynamicStructuredTool` factory
+### Level 1 — Actions (quick setup)
 
-### Built-in Skill Templates
-
-| Skill | Description |
-|-------|-------------|
-| `send-eth` | Send ETH from the agent wallet to any address |
-| `token-balance` | Check ETH or ERC-20 token balances |
-| `uniswap-swap` | Swap tokens on Uniswap V3 |
-
-Skills are selected interactively during `npm run deploy`, or installed programmatically:
+Import a bundled action and hand it to your agent:
 
 ```typescript
-import { scaffoldAgentSkill } from "web3agent-sdk"
-scaffoldAgentSkill("my-agent", "send-eth")
+import { SendEthAction, TokenBalanceAction } from "web3agent-sdk"
+
+const sendEth = SendEthAction()
+const tools = [...sendEth.tools]
+const systemPrompt = sendEth.skill.context
 ```
+
+### Level 2 — Tools (standalone)
+
+Use individual tools without the skill wrapper:
+
+```typescript
+import { sendEthTool, tokenBalanceTool } from "web3agent-sdk"
+```
+
+### Level 3 — Dynamic (any ABI)
+
+Generate tools from any contract ABI:
+
+```typescript
+import { buildToolsFromABI } from "web3agent-sdk"
+```
+
+### Available Actions
+
+| Action | Tools | Description |
+|--------|-------|-------------|
+| `SendEthAction()` | `send_eth` | Send ETH with balance checks |
+| `TokenBalanceAction()` | `get_token_balance` | Check ETH or ERC-20 balances |
 
 ---
 
@@ -168,7 +189,7 @@ Copy `.env.example` to `.env` and fill in:
 - **Never commit `.env` or `agents/*/wallet.json`** — both are in `.gitignore`
 - The master wallet private key is used only to fund agent wallets
 - Agent private keys are stored locally in `agents/<name>/wallet.json`
-- Installed skills in `agents/*/skills/` are also gitignored
+- Agent runtime data in `agents/` is gitignored
 
 ---
 

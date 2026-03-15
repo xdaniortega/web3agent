@@ -20,7 +20,7 @@ import { tokenBalanceSkill } from "./skills/token-balance.skill.js"
 import type { Action } from "./types.js"
 
 /**
- * @notice Production-ready action for sending ETH on Arbitrum.
+ * @notice Action for sending ETH on Arbitrum.
  * Includes tool + skill with safety checks baked in.
  */
 export const SendEthAction = (): Action => ({
@@ -31,7 +31,7 @@ export const SendEthAction = (): Action => ({
 })
 
 /**
- * @notice Production-ready action for checking token balances on Arbitrum.
+ * @notice Action for checking token balances on Arbitrum.
  * Supports ETH and any ERC-20 token.
  */
 export const TokenBalanceAction = (): Action => ({

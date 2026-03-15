@@ -6,6 +6,8 @@
 
 Composable onchain actions for AI agents on Arbitrum. Tools, skills, and dynamic ABI bindings built on LangChain and viem.
 
+> **WARNING: This is experimental software. Not for production use.** Use at your own risk. Do not use with real funds without fully understanding the code.
+
 ## Architecture
 
 Three levels of abstraction — pick the one that fits your use case:
@@ -29,7 +31,7 @@ Three levels of abstraction — pick the one that fits your use case:
               └────────────────────────────────┘
 ```
 
-**Level 1 — Actions** are production-ready bundles of tools + skill. Import an action, hand it to your agent, and go.
+**Level 1 — Actions** are opinionated bundles of tools + skill. Import an action, hand it to your agent, and go.
 
 **Level 2 — Tools** are individual `DynamicStructuredTool` instances. Pure execution — no reasoning layer. For advanced developers who want to compose their own agent logic.
 
