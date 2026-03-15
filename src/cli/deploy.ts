@@ -22,7 +22,6 @@ import {
 import { registerAgent } from "../core/registry.js";
 import { discoverAgentSkills, resolveAgentSkills } from "../core/agent-skills.js";
 import { createFileCheckpointer } from "../core/file-checkpoint.js";
-import { scaffoldAgentSkill, listSkillTemplates } from "../skills/scaffold.js";
 
 dotenv.config();
 
@@ -162,23 +161,6 @@ async function main(): Promise<void> {
   s.start(`Creating agent "${agentName}"...`);
   const agentWallet = getOrCreateAgentWallet({ agentName });
   s.stop(`Agent wallet: ${agentWallet.address}`);
-
-  // --- Select skills ---
-  const available = listSkillTemplates();
-  if (available.length > 0) {
-    const skillResult = await p.multiselect({
-      message: "Select skills to install",
-      options: available.map((s) => ({ value: s, label: s })),
-      required: false,
-    });
-
-    if (p.isCancel(skillResult)) { p.cancel("Cancelled."); process.exit(0); }
-
-    const selectedSkills = skillResult as string[];
-    for (const skill of selectedSkills) {
-      scaffoldAgentSkill(agentName, skill);
-    }
-  }
 
   // --- Fund amount ---
   const fundFromFlag = getFlag("fund");

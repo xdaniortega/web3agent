@@ -24,7 +24,7 @@ const NETWORKS: Record<NetworkName, NetworkConfig> = {
   // NOTE: Chain ID 23888 for Robinhood Testnet should be verified before production use.
   "robinhood-testnet": {
     name: "Robinhood Testnet",
-    chainId: 23888,
+    chainId: 46630,
     defaultRpcUrl: "https://robinhood-testnet.g.alchemy.com/v2",
   },
 };
@@ -101,4 +101,15 @@ export function getProvider(network?: NetworkName): ethers.JsonRpcProvider {
  */
 export function getChainId(network?: NetworkName): number {
   return getNetworkConfig(network).chainId;
+}
+
+/**
+ * Returns the human-readable network name for a given chain ID.
+ * Falls back to "Chain {chainId}" if unknown.
+ */
+export function getNetworkNameByChainId(chainId: number): string {
+  for (const config of Object.values(NETWORKS)) {
+    if (config.chainId === chainId) return config.name;
+  }
+  return `Chain ${chainId}`;
 }

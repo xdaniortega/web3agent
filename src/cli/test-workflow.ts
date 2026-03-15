@@ -12,7 +12,6 @@ import {
 } from "../core/wallet.js";
 import { runAgent } from "../core/orchestrator.js";
 import { discoverAgentSkills } from "../core/agent-skills.js";
-import { scaffoldAgentSkill } from "../skills/scaffold.js";
 
 dotenv.config();
 
@@ -35,9 +34,6 @@ async function main(): Promise<void> {
   console.log(`[test] Creating/loading agent wallet "${AGENT_NAME}"...`);
   const agentWallet = getOrCreateAgentWallet({ agentName: AGENT_NAME });
   console.log(`[test] Agent wallet: ${agentWallet.address}\n`);
-
-  console.log(`[test] Installing skills...`);
-  scaffoldAgentSkill(AGENT_NAME, "token-balance");
 
   const discoveredSkills = discoverAgentSkills(AGENT_NAME);
   console.log(`[test] Discovered: ${discoveredSkills.map((s) => s.name).join(", ") || "none"}\n`);

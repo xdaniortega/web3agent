@@ -13,6 +13,7 @@ dist/
 agents/*/wallet.json
 agents/*/skills/
 agents/*/memory.json
+agents/*/agent-config.json
 
 # Claude Code local settings
 .claude/
