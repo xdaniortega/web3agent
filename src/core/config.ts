@@ -102,3 +102,14 @@ export function getProvider(network?: NetworkName): ethers.JsonRpcProvider {
 export function getChainId(network?: NetworkName): number {
   return getNetworkConfig(network).chainId;
 }
+
+/**
+ * Returns the human-readable network name for a given chain ID.
+ * Falls back to "Chain {chainId}" if unknown.
+ */
+export function getNetworkNameByChainId(chainId: number): string {
+  for (const config of Object.values(NETWORKS)) {
+    if (config.chainId === chainId) return config.name;
+  }
+  return `Chain ${chainId}`;
+}

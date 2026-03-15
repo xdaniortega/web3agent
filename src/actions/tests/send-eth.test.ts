@@ -53,23 +53,25 @@ describe("send-eth tool", () => {
   })
 })
 
-describe("send-eth skill", () => {
+describe("transfer-eth skill", () => {
   it("has name, description, and context fields", async () => {
-    const { sendEthSkill } = await import("../skills/send-eth.skill.js")
-    expect(sendEthSkill.name).toBe("send-eth")
-    expect(sendEthSkill.description).toBeTruthy()
-    expect(sendEthSkill.context).toBeTruthy()
+    const { transferEthSkill } = await import("../skills/transfer-eth.skill.js")
+    expect(transferEthSkill.name).toBe("transfer-eth")
+    expect(transferEthSkill.description).toBeTruthy()
+    expect(transferEthSkill.context).toBeTruthy()
   })
 })
 
-describe("SendEthAction factory", () => {
-  it("returns object with tools array and skill", async () => {
-    const { SendEthAction } = await import("../index.js")
-    const action = SendEthAction()
-    expect(action.name).toBe("send-eth")
+describe("TransferEthAction factory", () => {
+  it("returns object with both tools and skill", async () => {
+    const { TransferEthAction } = await import("../index.js")
+    const action = TransferEthAction()
+    expect(action.name).toBe("transfer-eth")
     expect(Array.isArray(action.tools)).toBe(true)
-    expect(action.tools.length).toBeGreaterThan(0)
+    expect(action.tools.length).toBe(2)
+    expect(action.tools.map((t) => t.name)).toContain("send_eth")
+    expect(action.tools.map((t) => t.name)).toContain("get_token_balance")
     expect(action.skill).toBeDefined()
-    expect(action.skill.name).toBe("send-eth")
+    expect(action.skill.name).toBe("transfer-eth")
   })
 })

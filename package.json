@@ -15,6 +15,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "setup": "npx tsx src/cli/setup.ts",
+    "create-agent": "npx tsx src/cli/create-agent.ts",
     "deploy": "npx tsx src/cli/deploy.ts",
     "chat": "npx tsx src/cli/chat.ts",
     "test": "npx tsx src/cli/test-workflow.ts"

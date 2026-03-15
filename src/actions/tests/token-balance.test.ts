@@ -55,14 +55,10 @@ describe("token-balance skill", () => {
   })
 })
 
-describe("TokenBalanceAction factory", () => {
-  it("returns object with tools array and skill", async () => {
-    const { TokenBalanceAction } = await import("../index.js")
-    const action = TokenBalanceAction()
-    expect(action.name).toBe("token-balance")
-    expect(Array.isArray(action.tools)).toBe(true)
-    expect(action.tools.length).toBeGreaterThan(0)
-    expect(action.skill).toBeDefined()
-    expect(action.skill.name).toBe("token-balance")
+describe("tokenBalanceSkill standalone export", () => {
+  it("is exported from skills index", async () => {
+    const { tokenBalanceSkill } = await import("../skills/token-balance.skill.js")
+    expect(tokenBalanceSkill.name).toBe("token-balance")
+    expect(tokenBalanceSkill.context).toBeTruthy()
   })
 })

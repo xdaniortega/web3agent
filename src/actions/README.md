@@ -17,7 +17,7 @@ Three levels of abstraction — pick the one that fits your use case:
 │              Level 1: Actions               │
 │         (skill + tools, production)         │
 │                                             │
-│  SendEthAction()      TokenBalanceAction()  │
+│           TransferEthAction()                   │
 └──────────────┬──────────────────┬───────────┘
                │                  │
    ┌───────────▼──────┐ ┌────────▼─────────┐
@@ -27,7 +27,8 @@ Three levels of abstraction — pick the one that fits your use case:
                                 │
               ┌─────────────────▼──────────────┐
               │  Level 3: Dynamic               │
-              │  buildToolsFromABI()            │
+              │  fetch_contract_abi             │
+              │  call_contract                  │
               └────────────────────────────────┘
 ```
 
@@ -42,15 +43,14 @@ Three levels of abstraction — pick the one that fits your use case:
 ```typescript
 import { createReactAgent } from "@langchain/langgraph/prebuilt"
 import { ChatAnthropic } from "@langchain/anthropic"
-import { SendEthAction, TokenBalanceAction } from "web3agent-sdk/actions"
+import { TransferEthAction } from "web3agent-sdk/actions"
 
-const sendEth = SendEthAction()
-const tokenBalance = TokenBalanceAction()
+const transfer = TransferEthAction()
 
 const llm = new ChatAnthropic({ modelName: "claude-sonnet-4-20250514" })
 const agent = createReactAgent({
   llm,
-  tools: [...sendEth.tools, ...tokenBalance.tools],
+  tools: transfer.tools, // includes send_eth + get_token_balance
 })
 
 const result = await agent.invoke({
@@ -63,23 +63,22 @@ const result = await agent.invoke({
 Extract tools from an action and inject the skill context into your system prompt:
 
 ```typescript
-import { SendEthAction } from "web3agent-sdk/actions"
+import { TransferEthAction } from "web3agent-sdk/actions"
 
-const action = SendEthAction()
+const transfer = TransferEthAction()
 
-// Use tools with any LangChain agent
-const tools = action.tools
+// Use tools with any LangChain agent (send_eth + get_token_balance)
+const tools = transfer.tools
 
 // Inject skill context into the system prompt
-const systemPrompt = `You are an onchain agent.\n\n${action.skill.context}`
+const systemPrompt = `You are an onchain agent.\n\n${transfer.skill.context}`
 ```
 
 ## Available actions
 
-| Action                | Tools included      | Description                                    |
-|-----------------------|---------------------|------------------------------------------------|
-| `SendEthAction()`     | `send_eth`          | Send ETH with balance checks and confirmation  |
-| `TokenBalanceAction()`| `get_token_balance` | Check ETH or ERC-20 balance for any wallet     |
+| Action            | Tools included                  | Description                                              |
+|-------------------|---------------------------------|----------------------------------------------------------|
+| `TransferEthAction()` | `send_eth`, `get_token_balance` | Transfer ETH with balance checks and safety confirmations |
 
 ## Using tools directly (Level 2)
 
@@ -97,29 +96,24 @@ const balance = await tokenBalanceTool.invoke({
 })
 ```
 
-## Dynamic ABI tools (Level 3)
+## Dynamic contract tools (Level 3)
 
-Generate tools from any contract ABI:
+Two tools that let the agent discover and call any verified contract at runtime — no pre-configuration needed:
 
 ```typescript
-import { buildToolsFromABI } from "web3agent-sdk/actions"
+import { fetchContractAbiTool, callContractTool } from "web3agent-sdk/actions"
 
-const abi = [
-  {
-    type: "function",
-    name: "balanceOf",
-    inputs: [{ name: "owner", type: "address" }],
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-  },
-] as const
-
-const tools = buildToolsFromABI({
-  address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-  abi,
-  allowlist: ["balanceOf"], // optional — expose specific functions only
-})
+// Give both tools to your agent
+const tools = [fetchContractAbiTool, callContractTool]
 ```
+
+The agent autonomously:
+1. Calls `fetch_contract_abi` with a contract address to see its functions
+2. Calls `call_contract` with the address, function name, and args to execute
+
+Works with any verified contract on Arbiscan. Read calls (view/pure) return the result. Write calls (nonpayable/payable) return the tx hash.
+
+Set `ARBISCAN_API_KEY` for higher rate limits (optional).
 
 ## Creating a custom action
 

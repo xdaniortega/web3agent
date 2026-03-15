@@ -9,34 +9,20 @@ export * from "./tools/index.js"
 // Skills — exported separately for advanced use
 export * from "./skills/index.js"
 
-// Level 3 — dynamic ABI tools
-export * from "./dynamic/index.js"
-
 // Level 1 — Actions (skill + tools bundled)
 import { sendEthTool } from "./tools/send-eth.tool.js"
 import { tokenBalanceTool } from "./tools/token-balance.tool.js"
-import { sendEthSkill } from "./skills/send-eth.skill.js"
-import { tokenBalanceSkill } from "./skills/token-balance.skill.js"
+import { transferEthSkill } from "./skills/transfer-eth.skill.js"
 import type { Action } from "./types.js"
 
 /**
- * @notice Action for sending ETH on Arbitrum.
- * Includes tool + skill with safety checks baked in.
+ * @notice Action for transferring ETH on Arbitrum.
+ * Bundles send_eth and get_token_balance tools with a skill
+ * that guides the agent to check balances before sending.
  */
-export const SendEthAction = (): Action => ({
-  name: "send-eth",
-  description: "Send ETH on Arbitrum with built-in confirmation and safety checks",
-  tools: [sendEthTool],
-  skill: sendEthSkill,
-})
-
-/**
- * @notice Action for checking token balances on Arbitrum.
- * Supports ETH and any ERC-20 token.
- */
-export const TokenBalanceAction = (): Action => ({
-  name: "token-balance",
-  description: "Check ETH or ERC-20 token balance on Arbitrum",
-  tools: [tokenBalanceTool],
-  skill: tokenBalanceSkill,
+export const TransferEthAction = (): Action => ({
+  name: "transfer-eth",
+  description: "Transfer ETH on Arbitrum with balance checks and safety confirmations",
+  tools: [sendEthTool, tokenBalanceTool],
+  skill: transferEthSkill,
 })

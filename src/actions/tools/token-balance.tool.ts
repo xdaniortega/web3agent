@@ -45,12 +45,22 @@ export const tokenBalanceTool: DynamicStructuredTool = new DynamicStructuredTool
     "Check the ETH or ERC-20 token balance of a wallet address. " +
     "Omit tokenAddress to check native ETH balance.",
   schema: z.object({
-    address: z.string().describe("Wallet address to check balance for"),
+    address: z.string().optional().describe(
+      "Wallet address to check balance for. If omitted, uses the agent's own wallet (AGENT_PRIVATE_KEY)."
+    ),
     tokenAddress: z.string().optional().describe(
       "ERC-20 contract address. If omitted, returns native ETH balance."
     ),
   }),
-  func: async ({ address, tokenAddress }): Promise<string> => {
+  func: async ({ address: addressInput, tokenAddress }): Promise<string> => {
+    // Default to agent's own wallet if no address provided
+    let address = addressInput
+    if (!address) {
+      const pk = process.env.AGENT_PRIVATE_KEY
+      if (!pk) return "Error: No address provided and AGENT_PRIVATE_KEY is not set."
+      const { ethers } = await import("ethers")
+      address = new ethers.Wallet(pk).address
+    }
     try {
       const rpcUrl = getRpcUrl()
       const chain = defineChain({

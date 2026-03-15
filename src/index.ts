@@ -3,7 +3,7 @@
  * @packageDocumentation
  */
 
-export { getActiveNetwork, getNetworkConfig, getProvider, getRpcUrl, getChainId } from "./core/config.js";
+export { getActiveNetwork, getNetworkConfig, getProvider, getRpcUrl, getChainId, getNetworkNameByChainId } from "./core/config.js";
 export { getLLM } from "./core/llm.js";
 export type { LLMProvider } from "./core/llm.js";
 export {
@@ -24,15 +24,19 @@ export {
 export type { SkillFactory } from "./core/agent-skills.js";
 export { createFileCheckpointer } from "./core/file-checkpoint.js";
 export {
-  SendEthAction,
-  TokenBalanceAction,
+  TransferEthAction,
   sendEthTool,
   tokenBalanceTool,
-  sendEthSkill,
+  transferEthSkill,
   tokenBalanceSkill,
-  buildToolsFromABI,
+  fetchContractAbiTool,
+  callContractTool,
 } from "./actions/index.js";
 export type { Action, Skill } from "./actions/types.js";
+export { ACTION_REGISTRY, TOOL_REGISTRY, getActionByName, getToolByName, getStandaloneToolInstance } from "./core/action-registry.js";
+export type { ActionEntry, ToolEntry } from "./core/action-registry.js";
+export { saveAgentConfig, loadAgentConfig, resolveToolsFromConfig, buildCapabilitySummary } from "./core/agent-config.js";
+export type { AgentConfig, Endpoint, EndpointType } from "./core/agent-config.js";
 
 export type {
   NetworkName,

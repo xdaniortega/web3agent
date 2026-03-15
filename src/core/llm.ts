@@ -28,6 +28,7 @@ import type { CallbackManagerForLLMRun } from "@langchain/core/callbacks/manager
 import type { Runnable } from "@langchain/core/runnables";
 import type { BaseLanguageModelInput } from "@langchain/core/language_models/base";
 import { AIMessageChunk } from "@langchain/core/messages";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 /** OpenRouter message (simplified). */
 type ORMessage =
@@ -196,6 +197,14 @@ class ChatOpenRouter extends BaseChatModel<ChatOpenRouterCallOptions> {
     });
 
     const choice = response.choices?.[0];
+    if (process.env.DEBUG_LLM) {
+      console.log("[debug:llm] _generate called");
+      console.log("[debug:llm] tools sent:", JSON.stringify(tools?.map((t: ORToolDef) => ({
+        name: t.function.name,
+        params: Object.keys((t.function.parameters as any)?.properties ?? {}),
+      }))));
+      console.log("[debug:llm] response:", JSON.stringify(choice?.message, null, 2));
+    }
     if (!choice) {
       return {
         generations: [
@@ -235,6 +244,7 @@ class ChatOpenRouter extends BaseChatModel<ChatOpenRouterCallOptions> {
       ],
     };
   }
+
 }
 
 /** Extract JSON Schema from a Zod schema (best-effort). */
@@ -244,14 +254,12 @@ function jsonSchemaFromZod(schema: unknown): Record<string, unknown> {
     if ("jsonSchema" in schema && typeof (schema as Record<string, unknown>).jsonSchema === "function") {
       return (schema as { jsonSchema: () => Record<string, unknown> }).jsonSchema();
     }
-    // LangChain StructuredTool exposes schema via zodToJsonSchema at tool level
-    // Fall back to a basic object schema
     try {
-      // Dynamic import would be cleaner but we need sync here
-      const { zodToJsonSchema } = require("zod-to-json-schema");
-      return zodToJsonSchema(schema) as Record<string, unknown>;
+      const result = zodToJsonSchema(schema as any) as Record<string, unknown>;
+      // Remove $schema — some providers reject it
+      delete result.$schema;
+      return result;
     } catch {
-      // zod-to-json-schema not available, return empty
       return { type: "object", properties: {} };
     }
   }
