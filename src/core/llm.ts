@@ -282,7 +282,7 @@ export function getLLM(options: { streaming?: boolean } = {}): BaseChatModel {
           "OPENROUTER_API_KEY is not set. Get a key at https://openrouter.ai/keys"
         );
       }
-      return new ChatOpenRouter({ apiKey, model, maxTokens: 1024 });
+      return new ChatOpenRouter({ apiKey, model, maxTokens: 4096 });
     }
 
     case "anthropic": {

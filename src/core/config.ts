@@ -24,7 +24,7 @@ const NETWORKS: Record<NetworkName, NetworkConfig> = {
   // NOTE: Chain ID 23888 for Robinhood Testnet should be verified before production use.
   "robinhood-testnet": {
     name: "Robinhood Testnet",
-    chainId: 23888,
+    chainId: 46630,
     defaultRpcUrl: "https://robinhood-testnet.g.alchemy.com/v2",
   },
 };

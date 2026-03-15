@@ -46,7 +46,6 @@ npm run deploy -- --name my-agent
 - **Deploy agents** — Create isolated wallets, pick skills, fund from a master wallet, register on ERC-8004, and start chatting — all in one command.
 - **Per-agent skills** — Each agent gets its own `skills/` directory with SKILL.md instructions and executable TypeScript tools. Skills are auto-discovered at runtime.
 - **Multi-provider LLM** — Works with OpenRouter (default, auto-routes to best model), Anthropic (Claude), or OpenAI. Uses the `@openrouter/sdk` natively.
-- **ERC-8004 identity** — Agents register themselves onchain by default, giving them a verifiable identity.
 
 ---
 
