@@ -37,7 +37,7 @@ const erc20Abi = [
 
 /**
  * @notice Checks the ETH or ERC-20 token balance of a wallet address.
- * Never throws — returns "{amount} {symbol}" on success or an error message on failure.
+ * Never throws, returns "{amount} {symbol}" on success or an error message on failure.
  */
 export const tokenBalanceTool: DynamicStructuredTool = new DynamicStructuredTool({
   name: "get_token_balance",

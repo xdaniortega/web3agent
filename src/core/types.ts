@@ -1,5 +1,5 @@
 /**
- * Shared types for the web3agent-sdk.
+ * Shared types for web3agent.
  * @module types
  */
 
@@ -60,7 +60,7 @@ export interface RegistrationResult {
 
 /** Parsed SKILL.md file from an agent's skills directory. */
 export interface AgentSkillConfig {
-  /** Skill name — must match a key in the skill registry. */
+  /** Skill name, must match a key in the skill registry. */
   name: string;
   /** Optional description override for this agent's context. */
   description?: string;
@@ -72,9 +72,9 @@ export interface AgentSkillConfig {
 export interface RunAgentOptions {
   /** Natural-language task for the agent to execute. */
   task: string;
-  /** Agent's private key — passed to skill factories so they can sign transactions. */
+  /** Agent's private key, passed to skill factories so they can sign transactions. */
   privateKey: string;
-  /** Agent name — skills are discovered from agents/<name>/skills/. */
+  /** Agent name, skills are discovered from agents/<name>/skills/. */
   agentName?: string;
   /**
    * Enable streaming output from the model.

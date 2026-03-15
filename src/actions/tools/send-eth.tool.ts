@@ -15,7 +15,7 @@ import { getRpcUrl, getChainId } from "../../core/config.js"
 
 /**
  * @notice Sends ETH from the agent wallet to a destination address.
- * Reads AGENT_PRIVATE_KEY from environment. Never throws — returns a string
+ * Reads AGENT_PRIVATE_KEY from environment. Never throws, returns a string
  * containing the transaction hash on success or an error message on failure.
  */
 export const sendEthTool: DynamicStructuredTool = new DynamicStructuredTool({
