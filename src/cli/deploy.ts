@@ -19,6 +19,9 @@ import {
   getMasterWalletBalance,
   fundAgentWallet,
 } from "../core/wallet.js";
+import { createSmartWallet } from "../core/smart-wallet.js";
+import { applyPolicy, POLICY_PRESETS } from "../core/policy.js";
+import type { PolicyPreset } from "../core/policy.js";
 import { registerAgent } from "../core/registry.js";
 import { discoverAgentSkills, resolveAgentSkills } from "../core/agent-skills.js";
 import { createFileCheckpointer } from "../core/file-checkpoint.js";
@@ -163,6 +166,77 @@ async function main(): Promise<void> {
   const agentWallet = getOrCreateAgentWallet({ agentName });
   s.stop(`Agent wallet: ${agentWallet.address}`);
 
+  // --- Smart wallet (ERC-7702 + 4337) ---
+  const hasZeroDev = !!process.env.ZERODEV_RPC;
+  let smartWalletAddress: string | undefined;
+
+  if (hasZeroDev) {
+    const walletModeResult = await p.confirm({
+      message: "Enable ERC-7702 smart wallet with paymaster? (requires ZERODEV_RPC)",
+      initialValue: true,
+    });
+
+    if (!p.isCancel(walletModeResult) && walletModeResult) {
+      s.start("Creating ERC-7702 Kernel smart wallet...");
+      try {
+        const smartWallet = await createSmartWallet({
+          privateKey: agentWallet.privateKey,
+        });
+        smartWalletAddress = smartWallet.address;
+        s.stop(`Smart wallet (7702): ${smartWallet.address}`);
+
+        // --- Policy assignment ---
+        const policyResult = await p.select({
+          message: "Select spending policy for this agent",
+          options: [
+            { value: "conservative", label: "Conservative — 0.01 ETH limit, 10 ops" },
+            { value: "standard", label: "Standard — 0.5 ETH limit, 100 ops" },
+            { value: "unrestricted", label: "Unrestricted — no limits (use with caution)" },
+            { value: "skip", label: "Skip — no policy (agent uses sudo key)" },
+          ],
+        });
+
+        if (!p.isCancel(policyResult) && policyResult !== "skip") {
+          s.start(`Applying "${policyResult}" policy...`);
+          try {
+            const session = await applyPolicy(smartWallet, policyResult as PolicyPreset);
+
+            // Persist session key to agent directory
+            const agentDir = (await import("node:path")).join(
+              (await import("../core/wallet.js")).AGENTS_DIR,
+              agentName
+            );
+            const fs = await import("node:fs");
+            fs.writeFileSync(
+              (await import("node:path")).join(agentDir, "session.json"),
+              JSON.stringify(
+                {
+                  address: session.address,
+                  privateKey: session.privateKey,
+                  serialized: session.serialized,
+                  policy: policyResult,
+                  expiresAt: session.expiresAt ?? null,
+                },
+                null,
+                2
+              ),
+              "utf-8"
+            );
+
+            s.stop(`Policy applied. Session key: ${session.address}`);
+          } catch (err) {
+            s.stop(`Policy failed: ${err instanceof Error ? err.message : err}`);
+          }
+        }
+      } catch (err) {
+        s.stop(`Smart wallet failed: ${err instanceof Error ? err.message : err}`);
+        p.log.warn(
+          "Falling back to standard EOA wallet. Check your ZERODEV_RPC configuration."
+        );
+      }
+    }
+  }
+
   // --- Select skills ---
   const available = listSkillTemplates();
   if (available.length > 0) {
@@ -235,14 +309,20 @@ async function main(): Promise<void> {
 
   const discoveredSkills = discoverAgentSkills(agentName).map((c) => c.name);
 
-  p.note(
-    `Name    : ${agentName}\n` +
-    `Wallet  : ${agentWallet.address}\n` +
-    `Balance : ${ethers.formatEther(agentBalance)} ETH\n` +
-    `Skills  : ${discoveredSkills.join(", ") || "none"}\n` +
-    `Master  : ${masterWallet.address}`,
-    "Agent Deployed"
+  const summaryLines = [
+    `Name    : ${agentName}`,
+    `Wallet  : ${agentWallet.address}`,
+  ];
+  if (smartWalletAddress) {
+    summaryLines.push(`Smart   : ${smartWalletAddress} (ERC-7702 + 4337)`);
+  }
+  summaryLines.push(
+    `Balance : ${ethers.formatEther(agentBalance)} ETH`,
+    `Skills  : ${discoveredSkills.join(", ") || "none"}`,
+    `Master  : ${masterWallet.address}`
   );
+
+  p.note(summaryLines.join("\n"), "Agent Deployed");
 
   // --- Open chat ---
   const chatResult = await p.confirm({

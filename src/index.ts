@@ -25,6 +25,12 @@ export type { SkillFactory } from "./core/agent-skills.js";
 export { createFileCheckpointer } from "./core/file-checkpoint.js";
 export { scaffoldAgentSkill, listSkillTemplates } from "./skills/scaffold.js";
 
+export { createSmartWallet } from "./core/smart-wallet.js";
+export { applyPolicy, POLICY_PRESETS } from "./core/policy.js";
+export type { PolicyConfig, PolicyPreset, PolicySession } from "./core/policy.js";
+export { getZeroDevConfig } from "./core/zerodev-config.js";
+export type { ZeroDevConfig } from "./core/zerodev-config.js";
+
 export type {
   NetworkName,
   NetworkConfig,
@@ -33,6 +39,8 @@ export type {
   FundAgentOptions,
   RegisterAgentOptions,
   RegistrationResult,
+  SmartWalletOptions,
+  SmartWalletResult,
   RunAgentOptions,
   AgentRunResult,
   AgentSkillConfig,

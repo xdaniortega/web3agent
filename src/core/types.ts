@@ -91,6 +91,26 @@ export interface AgentRunResult {
   steps: string[];
 }
 
+/** Options for creating a ZeroDev smart wallet with ERC-7702. */
+export interface SmartWalletOptions {
+  /** Agent's private key (hex string, with or without 0x prefix). */
+  privateKey: string;
+}
+
+/** Result returned after creating a ZeroDev smart wallet. */
+export interface SmartWalletResult {
+  /** The on-chain address of the Kernel smart account (same as EOA with 7702). */
+  address: `0x${string}`;
+  /** The KernelAccountClient for sending UserOps. */
+  client: any;
+  /** The ECDSA validator, needed when creating policy sessions. */
+  ecdsaValidator: any;
+  /** The PublicClient for chain reads. */
+  publicClient: any;
+  /** Resolved network name. */
+  network: NetworkName;
+}
+
 /** Inputs for the Uniswap V3 swap skill. */
 export interface SwapInput {
   /** Address of the token to sell. */
