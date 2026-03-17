@@ -32,11 +32,20 @@ Three levels of abstraction, pick the one that fits your use case:
               └────────────────────────────────┘
 ```
 
-**Level 1 — Actions** are opinionated bundles of tools + skill. Import an action, hand it to your agent, and go.
+**Level 1 — Actions** are opinionated bundles of tools + skill. Import an action, hand it to your agent, and go. This is the recommended starting point for most developers.
 
-**Level 2 — Tools** are individual `DynamicStructuredTool` instances. Pure execution, no reasoning layer. For advanced developers who want to compose their own agent logic.
+**Level 2 — Tools** are individual `DynamicStructuredTool` instances. Pure execution, no reasoning layer. The tool handles what to do (send ETH, check a balance), but not when or why. For advanced developers who want to compose their own agent logic.
 
 **Level 3 — Dynamic** is a generic ABI-based tool factory. Pass any contract ABI and get usable LangChain tools back. For exploration and prototyping.
+
+### How actions work at runtime
+
+When an agent loads an Action, two things happen:
+
+1. **Tools** are registered with the LangChain agent — the LLM can call them during execution.
+2. **Skill context** is injected verbatim into the agent's system prompt — this gives the LLM reasoning guidance about *when* and *how* to use those tools.
+
+The Skill is not executable code. It's prompt engineering packaged alongside the tools it describes. This is what separates an Action from a bare tool: the agent doesn't just know it *can* send ETH, it knows it *should* check the balance first and only ask for confirmation above 0.1 ETH.
 
 ## Quickstart
 
@@ -197,6 +206,66 @@ Composable unit combining tools + skill. Level 1 of the actions architecture.
 | `description` | `string`                  | Short description                    |
 | `tools`       | `DynamicStructuredTool[]` | Tools included in this action        |
 | `skill`       | `Skill`                   | Reasoning context for the agent      |
+
+## Actions vs MCP (Model Context Protocol)
+
+A common question is whether this actions system should be replaced by or aligned with [MCP](https://modelcontextprotocol.io). Short answer: **they solve different problems at different layers of the stack.**
+
+```
+┌──────────────────────────────────────────────┐
+│  Actions       (what + how to reason)        │  ← Agent behavior design
+├──────────────────────────────────────────────┤
+│  Tools         (what to execute)             │  ← Business logic (viem, Zod)
+├──────────────────────────────────────────────┤
+│  Transport     (how to discover & invoke)    │  ← MCP lives here
+└──────────────────────────────────────────────┘
+```
+
+### What Actions do that MCP doesn't
+
+Actions are an **agent behavior composition** layer. An Action bundles execution (Tools) with reasoning guidance (Skills) into a single unit that shapes how an LLM thinks and acts. MCP has no equivalent concept for:
+
+- **Skills** — prompt context that teaches the LLM *when* and *why* to use a tool, not just *how*. MCP tools have descriptions, but not structured reasoning guidance with examples.
+- **Action bundles** — curated groupings of tools that belong together (e.g., `send_eth` + `get_token_balance` as a single `TransferEthAction`). MCP exposes flat tool lists.
+- **Agent-level configuration** — which actions an agent has selected, stored in an ERC-8004 compliant config.
+
+### What MCP does that Actions don't
+
+MCP is a **transport protocol** for tool discovery and invocation across process boundaries. It solves problems Actions don't address:
+
+- **Remote tool discovery** — an agent can discover another agent's tools at runtime via `tools/list`.
+- **Cross-process invocation** — tools run in a separate server process, called via JSON-RPC.
+- **Inter-agent communication** — Agent A can use Agent B's tools without sharing a runtime.
+
+Currently, all tools in this project run in-process. If Agent A wants to call Agent B's `send_eth` tool, there's no path for that today.
+
+### How they relate
+
+Actions and MCP are **complementary, not competing**:
+
+- **Tools** (Level 2) are the shared primitive. A `send_eth` tool is pure execution logic — it doesn't care if it's invoked by a local LangChain agent or by a remote MCP client.
+- **MCP** is a transport layer that can wrap existing tools for external consumption. An MCP server can expose the same `send_eth` tool that an Action bundles locally.
+- **Actions** remain the composition layer on top. An Action could include both local tools and MCP-sourced remote tools — it doesn't care about transport.
+
+```
+TransferEthAction
+  ├── skill: transferEthSkill            (local prompt context)
+  ├── tool:  send_eth                    (local, in-process)
+  └── tool:  price_feed                  (remote, via MCP from another agent)
+```
+
+The ERC-8004 agent config already defines `"MCP"` as a supported endpoint type, acknowledging this future. When agent-to-agent tool sharing is needed, MCP is the right transport — but it wraps the tools layer, it doesn't replace the actions layer.
+
+### TL;DR
+
+| Concern | Actions | MCP |
+|---------|---------|-----|
+| What it solves | Agent behavior composition (tools + reasoning) | Tool discovery & invocation across boundaries |
+| Scope | In-process, per-agent | Cross-process, multi-agent |
+| Key primitive | `Action` (Skill + Tools bundle) | `Tool` (JSON Schema + JSON-RPC handler) |
+| Reasoning guidance | Yes (Skills with prompt context + examples) | No (tool descriptions only) |
+| Remote tool access | No | Yes |
+| Relationship | Sits above MCP — can compose MCP-sourced tools | Sits below Actions — transports tool calls |
 
 ## Contributing
 
