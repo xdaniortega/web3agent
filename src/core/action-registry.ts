@@ -10,10 +10,12 @@ import type { DynamicStructuredTool } from "@langchain/core/tools"
 import type { Action } from "../actions/types.js"
 import {
   TransferEthAction,
+  UniswapSwapAction,
   sendEthTool,
   tokenBalanceTool,
   fetchContractAbiTool,
   callContractTool,
+  httpRequestTool,
 } from "../actions/index.js"
 
 /** @notice Describes an available action for the selection menu. */
@@ -40,6 +42,13 @@ export const ACTION_REGISTRY: ActionEntry[] = [
     skillName: "transfer-eth",
     factory: TransferEthAction,
   },
+  {
+    name: "uniswap-swap",
+    description: "Swap tokens on Uniswap via Trading API (quote, approve, swap)",
+    toolNames: ["http_request", "call_contract", "fetch_contract_abi", "get_token_balance"],
+    skillName: "uniswap-swap",
+    factory: UniswapSwapAction,
+  },
 ]
 
 /** @notice Registry of all available standalone tools (Level 2). */
@@ -60,6 +69,10 @@ export const TOOL_REGISTRY: ToolEntry[] = [
     name: "call_contract",
     description: "Call any function on a verified contract (experimental)",
   },
+  {
+    name: "http_request",
+    description: "Make HTTP requests to allowed API endpoints (Uniswap, 1inch, CoinGecko, etc.)",
+  },
 ]
 
 const TOOL_INSTANCES: Record<string, DynamicStructuredTool> = {
@@ -67,6 +80,7 @@ const TOOL_INSTANCES: Record<string, DynamicStructuredTool> = {
   get_token_balance: tokenBalanceTool,
   fetch_contract_abi: fetchContractAbiTool,
   call_contract: callContractTool,
+  http_request: httpRequestTool,
 }
 
 /** @notice Look up an action entry by name. */
