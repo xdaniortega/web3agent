@@ -11,7 +11,7 @@ import {
   defineChain,
 } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
-import { getRpcUrl, getChainId } from "../../core/config.js"
+import { getRpcUrl, getChainId } from "../../../core/config.js"
 
 /**
  * @notice Sends ETH from the agent wallet to a destination address.

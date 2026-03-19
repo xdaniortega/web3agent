@@ -3,7 +3,7 @@
 import { DynamicStructuredTool } from "@langchain/core/tools"
 import { z } from "zod"
 import type { Abi, AbiFunction } from "viem"
-import { getChainId } from "../../core/config.js"
+import { getChainId } from "../../../core/config.js"
 
 const EXPLORER_API: Record<number, string> = {
   42161: "https://api.arbiscan.io/api",
