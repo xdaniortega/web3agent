@@ -9,7 +9,7 @@ import {
   formatUnits,
   defineChain,
 } from "viem"
-import { getRpcUrl, getChainId } from "../../core/config.js"
+import { getRpcUrl, getChainId } from "../../../core/config.js"
 
 const erc20Abi = [
   {
