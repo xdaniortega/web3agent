@@ -10,17 +10,10 @@ import type { DynamicStructuredTool } from "@langchain/core/tools"
 import type { Action } from "../actions/types.js"
 import {
   TransferEthAction,
-  UniswapV3SwapAction,
-  UniswapV4SwapAction,
   sendEthTool,
   tokenBalanceTool,
   fetchContractAbiTool,
   callContractTool,
-  httpRequestTool,
-  uniswapV3QuoteTool,
-  uniswapV3SwapTool,
-  uniswapV4QuoteTool,
-  uniswapV4SwapTool,
 } from "../actions/index.js"
 
 /** @notice Describes an available action for the selection menu. */
@@ -42,24 +35,10 @@ export interface ToolEntry {
 export const ACTION_REGISTRY: ActionEntry[] = [
   {
     name: "transfer-eth",
-    description: "Transfer ETH with balance checks and safety confirmations",
+    description: "Transfer ETH on Arbitrum with balance checks and safety confirmations",
     toolNames: ["send_eth", "get_token_balance"],
     skillName: "transfer-eth",
     factory: TransferEthAction,
-  },
-  {
-    name: "uniswap-v3-swap",
-    description: "Swap tokens on Uniswap V3 via SwapRouter02 (quote, approve, swap)",
-    toolNames: ["uniswap_v3_quote", "uniswap_v3_swap", "get_token_balance"],
-    skillName: "uniswap-v3-swap",
-    factory: UniswapV3SwapAction,
-  },
-  {
-    name: "uniswap-v4-swap",
-    description: "Swap tokens on Uniswap V4 via UniversalRouter (quote, Permit2 approve, swap)",
-    toolNames: ["uniswap_v4_quote", "uniswap_v4_swap", "get_token_balance"],
-    skillName: "uniswap-v4-swap",
-    factory: UniswapV4SwapAction,
   },
 ]
 
@@ -75,31 +54,11 @@ export const TOOL_REGISTRY: ToolEntry[] = [
   },
   {
     name: "fetch_contract_abi",
-    description: "Fetch a verified contract's ABI from the block explorer",
+    description: "Fetch a verified contract's ABI from the block explorer (experimental)",
   },
   {
     name: "call_contract",
-    description: "Call any function on a verified contract",
-  },
-  {
-    name: "http_request",
-    description: "Make HTTP requests to allowed API endpoints (1inch, CoinGecko, etc.)",
-  },
-  {
-    name: "uniswap_v3_quote",
-    description: "Get a Uniswap V3 swap quote (expected output amount)",
-  },
-  {
-    name: "uniswap_v3_swap",
-    description: "Execute a Uniswap V3 token swap on-chain",
-  },
-  {
-    name: "uniswap_v4_quote",
-    description: "Get a Uniswap V4 swap quote (expected output amount)",
-  },
-  {
-    name: "uniswap_v4_swap",
-    description: "Execute a Uniswap V4 token swap on-chain",
+    description: "Call any function on a verified contract (experimental)",
   },
 ]
 
@@ -108,11 +67,6 @@ const TOOL_INSTANCES: Record<string, DynamicStructuredTool> = {
   get_token_balance: tokenBalanceTool,
   fetch_contract_abi: fetchContractAbiTool,
   call_contract: callContractTool,
-  http_request: httpRequestTool,
-  uniswap_v3_quote: uniswapV3QuoteTool,
-  uniswap_v3_swap: uniswapV3SwapTool,
-  uniswap_v4_quote: uniswapV4QuoteTool,
-  uniswap_v4_swap: uniswapV4SwapTool,
 }
 
 /** @notice Look up an action entry by name. */

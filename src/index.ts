@@ -25,20 +25,12 @@ export type { SkillFactory } from "./core/agent-skills.js";
 export { createFileCheckpointer } from "./core/file-checkpoint.js";
 export {
   TransferEthAction,
-  UniswapV3SwapAction,
-  UniswapV4SwapAction,
   sendEthTool,
   tokenBalanceTool,
   transferEthSkill,
   tokenBalanceSkill,
   fetchContractAbiTool,
   callContractTool,
-  uniswapV3QuoteTool,
-  uniswapV3SwapTool,
-  uniswapV3SwapSkill,
-  uniswapV4QuoteTool,
-  uniswapV4SwapTool,
-  uniswapV4SwapSkill,
 } from "./actions/index.js";
 export type { Action, Skill } from "./actions/types.js";
 export { ACTION_REGISTRY, TOOL_REGISTRY, getActionByName, getToolByName, getStandaloneToolInstance } from "./core/action-registry.js";

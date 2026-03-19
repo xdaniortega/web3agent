@@ -11,7 +11,7 @@ import {
 } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import type { AbiFunction } from "viem"
-import { getRpcUrl, getChainId } from "../../../core/config.js"
+import { getRpcUrl, getChainId } from "../../core/config.js"
 import { fetchAbi } from "./fetch-contract-abi.tool.js"
 
 function coerceArgs(values: unknown[], inputs: AbiFunction["inputs"]): unknown[] {
@@ -53,11 +53,8 @@ export const callContractTool: DynamicStructuredTool = new DynamicStructuredTool
     args: z.string().optional().describe(
       "JSON array of arguments e.g. '[\"0x...\", \"100\"]'. Omit for functions with no arguments."
     ),
-    value: z.string().optional().describe(
-      "ETH value to send with payable calls, in wei (e.g. '10000000000000000' for 0.01 ETH). Only for payable functions."
-    ),
   }),
-  func: async ({ address, functionName, args, value }): Promise<string> => {
+  func: async ({ address, functionName, args }): Promise<string> => {
     try {
       const abi = await fetchAbi(address)
       const fn = abi.find(
@@ -110,19 +107,12 @@ export const callContractTool: DynamicStructuredTool = new DynamicStructuredTool
         transport: http(rpcUrl),
       })
 
-      const txParams: any = {
+      const hash = await walletClient.writeContract({
         address: address as `0x${string}`,
         abi: [fn],
         functionName,
         args: coerced,
-      }
-
-      // Attach ETH value for payable calls
-      if (value && fn.stateMutability === "payable") {
-        txParams.value = BigInt(value)
-      }
-
-      const hash = await walletClient.writeContract(txParams)
+      })
 
       return hash
     } catch (err) {
